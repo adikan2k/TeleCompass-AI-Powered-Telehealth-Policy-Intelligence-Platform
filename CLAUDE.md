@@ -10,9 +10,11 @@ Read `docs/PLAN.md` before doing anything. It has the goal, the stack and the mi
 ## How we work
 
 1. One milestone at a time. Stop at the end of each and show Aditya the exact command to run it.
-2. Decisions first. Before creating a new module, add an entry to `docs/DECISIONS.md` (what, why,
-   what else was considered, the trade-off) and wait for Aditya's yes. Keep a one-page summary of
-   the decisions that mattered at the top of that file.
+2. Decisions are logged, not approved one by one. When creating a new module, add an entry to
+   `docs/DECISIONS.md` (what, why, what else was considered, the trade-off) and carry on. Keep a
+   one-page summary of the decisions that mattered at the top of that file. Stop and ask Aditya
+   only for what is truly his: his accounts and keys, spending beyond a run's cost cap, a site
+   that forbids fetching, and tasks marked **[ADITYA]**. Keep updates to him short and plain.
 3. After each module, give Aditya a short plain-English "how this works" so he can explain it.
 4. Work on the `rebuild` branch. Small commits. Never commit to `main`, never force-push, and
    push only when Aditya says so. When a milestone is done and approved, merge to `main` so the

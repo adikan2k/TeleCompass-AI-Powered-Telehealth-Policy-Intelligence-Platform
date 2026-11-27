@@ -127,6 +127,27 @@ def test_modality_with_no_rule_is_silent() -> None:
     assert "store and forward" in result.reason
 
 
+def test_a_rule_for_one_named_service_is_shown_but_does_not_decide() -> None:
+    pregnancy = rule(
+        MEDICAID,
+        "allow",
+        "coverage",
+        modality="remote_patient_monitoring",
+        service="monitoring for high-risk pregnancies",
+        summary="Paid for high-risk pregnancies.",
+    )
+    general = visit(modality="remote_patient_monitoring", service=None)
+
+    result = line(decide(general, [NO_PHONE, VIDEO, pregnancy], []), MEDICAID)
+
+    assert result.verdict == Verdict.SILENT
+    assert "named service only: monitoring for high-risk pregnancies" in result.reason
+    assert [item.rule_id for item in result.would_allow] == [pregnancy.id, VIDEO.id]
+
+    named = visit(modality="remote_patient_monitoring", service="high-risk pregnancies")
+    assert line(decide(named, [pregnancy], []), MEDICAID).verdict == Verdict.ALLOWED
+
+
 def test_medicaid_line_does_not_apply_to_another_payer() -> None:
     result = line(decide(visit(payer="private"), [NO_PHONE], []), MEDICAID)
     assert result.verdict == Verdict.NOT_APPLICABLE

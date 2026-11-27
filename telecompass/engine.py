@@ -222,12 +222,29 @@ def medicaid_line(visit: Visit, rules: list[Rule]) -> Line:
     other_ways = [
         r for r in mine if r.effect == "allow" and r.modality not in (visit.modality, "any")
     ]
-    return _coverage_line(key, title, visit.modality, here, other_ways)
+    # Rules that pay for this modality only for a named service. The public form names no
+    # service (no free text), so they cannot decide the visit, but they are shown, not hidden.
+    only_for = [
+        r
+        for r in rules
+        if r.rule_type == key
+        and r.effect == "allow"
+        and r.modality in (visit.modality, "any")
+        and fits_profession(r, visit.profession)
+        and not fits_service(r, visit.service)
+    ]
+    return _coverage_line(key, title, visit.modality, here, other_ways, only_for)
 
 
 def _coverage_line(
-    key: str, title: str, modality: str, here: list[Rule], other_ways: list[Rule]
+    key: str,
+    title: str,
+    modality: str,
+    here: list[Rule],
+    other_ways: list[Rule],
+    only_for: list[Rule] | None = None,
 ) -> Line:
+    only_for = only_for or []
     name = modality.replace("_", " ")
     denies, allows, requires = _of(here, "deny"), _of(here, "allow"), _of(here, "require")
     if denies:
@@ -250,8 +267,18 @@ def _coverage_line(
             conditions=_shown(requires),
         )
     reason = f"We hold no rule that says whether {name} is paid."
+    if only_for:
+        services = "; ".join(sorted({rule.service or "" for rule in only_for}))
+        reason = (
+            f"We hold no rule that says whether {name} is paid in general. "
+            f"It is paid for a named service only: {services}."
+        )
     return Line(
-        key=key, title=title, verdict=Verdict.SILENT, reason=reason, would_allow=_shown(other_ways)
+        key=key,
+        title=title,
+        verdict=Verdict.SILENT,
+        reason=reason,
+        would_allow=_shown([*only_for, *other_ways]),
     )
 
 

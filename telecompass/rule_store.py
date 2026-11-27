@@ -87,6 +87,7 @@ def save_rule(
     payer: str | None = None,
     modality: str | None = None,
     service: str | None = None,
+    service_category: str = "any",
     compact: str | None = None,
     conditions: list[str] | None = None,
     quote: str | None = None,
@@ -100,11 +101,12 @@ def save_rule(
     """Insert one rule. A changed rule is always a new row, never an update."""
     row = conn.execute(
         "INSERT INTO rule (extraction_run_id, entry_id, jurisdiction, rule_type, aspect, effect, "
-        "profession, payer, modality, service, compact, conditions, summary, quote, "
+        "profession, payer, modality, service, service_category, compact, conditions, summary, "
+        "quote, "
         "quote_verified, quote_note, source_text_id, source_url, source_fetched_at, "
         "effective_from, effective_to, status, created_at) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
-        "%s, %s, %s) RETURNING *",
+        "%s, %s, %s, %s) RETURNING *",
         (
             run_id,
             entry_id,
@@ -116,6 +118,7 @@ def save_rule(
             payer,
             modality,
             service,
+            service_category,
             compact,
             Jsonb(conditions or []),
             summary,

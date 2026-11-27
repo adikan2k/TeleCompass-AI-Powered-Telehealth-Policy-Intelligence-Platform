@@ -1,0 +1,59 @@
+# Our pointers to the official federal Medicare telehealth source (D13).
+#
+# Each pointer says, in our own words, what to look for. It states no law itself: the rules and
+# their dates come only from the page it points to, quoted word for word.
+#
+# The source is the CMS Telehealth FAQ. CMS puts the date of the latest update in the file
+# name, so this link must be checked when the FAQ is next updated. It is linked from
+# https://www.cms.gov/medicare/coverage/telehealth under "Downloads".
+
+[[pointer]]
+category = "Medicare"
+topic = "Telehealth flexibilities"
+subtopic = "Where the patient can be"
+text = """
+Where a Medicare patient may be located to receive telehealth: at home or only in a medical
+facility, in any area or only in a rural area. Look for the date through which patients may be
+anywhere, what applies after that date, and what is different for behavioral health services.
+"""
+sources = [
+  { label = "CMS Telehealth FAQ", url = "https://www.cms.gov/files/document/telehealth-faq-updated-10-09-2026.pdf" },
+]
+
+[[pointer]]
+category = "Medicare"
+topic = "Telehealth flexibilities"
+subtopic = "Audio-only visits"
+text = """
+Whether Medicare pays for telehealth delivered by audio only, without video. Look for the date
+through which audio-only is allowed, what applies after that date, the conditions attached, and
+what is different for behavioral health services.
+"""
+sources = [
+  { label = "CMS Telehealth FAQ", url = "https://www.cms.gov/files/document/telehealth-faq-updated-10-09-2026.pdf" },
+]
+
+[[pointer]]
+category = "Medicare"
+topic = "Telehealth flexibilities"
+subtopic = "In-person visit requirement for mental health"
+text = """
+Whether a Medicare patient must have an in-person visit before or alongside mental health
+telehealth. Look for the requirement itself, the date it starts to apply, how often the
+in-person visit is needed, and how patients who began care before that date are treated.
+"""
+sources = [
+  { label = "CMS Telehealth FAQ", url = "https://www.cms.gov/files/document/telehealth-faq-updated-10-09-2026.pdf" },
+]
+
+[[pointer]]
+category = "Medicare"
+topic = "Telehealth flexibilities"
+subtopic = "Who can provide telehealth"
+text = """
+Which kinds of practitioners may furnish and bill Medicare telehealth. Look for the date through
+which the wider list of practitioners applies, and who can no longer furnish telehealth after it.
+"""
+sources = [
+  { label = "CMS Telehealth FAQ", url = "https://www.cms.gov/files/document/telehealth-faq-updated-10-09-2026.pdf" },
+]

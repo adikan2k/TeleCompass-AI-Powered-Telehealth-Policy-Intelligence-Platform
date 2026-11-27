@@ -21,7 +21,8 @@ from telecompass.sources import FETCHED, FORBIDDEN, scoped_entries
 
 # Bump when the instructions change, so every run records which instructions it used.
 # v1: first run. v2: rules must carry their conditions, human care only, modality as stated.
-PROMPT_VERSION = "v2"
+# v3: same instructions; adds the Medicare rule type and the service_category field.
+PROMPT_VERSION = "v3"
 MAX_SOURCE_CHARS = 120_000  # per model call, shared between the entry's sources
 MIN_QUOTE_CHARS = 20
 
@@ -46,10 +47,14 @@ Aspect = Literal[
     "license_required",
     "consent",
     "prescribing",
+    "originating_site",
+    "in_person_requirement",
+    "eligible_practitioner",
     "other",
 ]
 Effect = Literal["allow", "deny", "require"]
-Payer = Literal["medicaid", "private", "any"]
+Payer = Literal["medicaid", "medicare", "private", "any"]
+ServiceCategory = Literal["behavioral_health", "other", "any"]
 Modality = Literal[
     "live_video",
     "store_and_forward",
@@ -77,6 +82,11 @@ class ExtractedRule(BaseModel):
     payer: Payer
     modality: Modality
     service: str | None = Field(description="The service it is limited to, or null.")
+    service_category: ServiceCategory = Field(
+        description="'behavioral_health' if the SOURCE limits the rule to mental or behavioral "
+        "health or substance use care, 'other' if it limits it to non-behavioral care, 'any' if "
+        "it draws no such line."
+    )
     compact: Compact | None = Field(description="The licensure compact, or null if none.")
     conditions: list[str] = Field(description="Conditions attached to the rule. May be empty.")
     quote: str = Field(
@@ -159,6 +169,18 @@ RULE_TYPE_GUIDANCE = {
         "Aspects: 'service_parity' (a plan must cover a service by telehealth as it would in "
         "person), 'payment_parity' (a plan must pay the same rate as in person), or 'other'."
     ),
+    scope.MEDICARE_TELEHEALTH: (
+        "What federal Medicare allows for telehealth, and until when. Use payer 'medicare'. "
+        "Dates matter most here: when the SOURCE says a rule holds through a date, set "
+        "effective_to to that date; when it says a rule starts on or after a date, set "
+        "effective_from; write a separate rule for what applies after a flexibility ends if "
+        "the SOURCE states it. Aspects: 'originating_site' (where the patient may be, such as "
+        "at home, and any geographic limit), 'coverage' (whether a modality such as audio-only "
+        "is paid; set modality), 'in_person_requirement' (an in-person visit required before "
+        "or alongside telehealth), 'eligible_practitioner' (who may furnish telehealth), or "
+        "'other'. Set service_category when the SOURCE separates behavioral health from "
+        "other care."
+    ),
 }
 
 DEFAULT_ASPECT = {
@@ -167,6 +189,7 @@ DEFAULT_ASPECT = {
     scope.CONSENT: "consent",
     scope.ONLINE_PRESCRIBING: "prescribing",
     scope.PRIVATE_PAYER_PARITY: "other",
+    scope.MEDICARE_TELEHEALTH: "other",
 }
 TOPIC_MODALITY = {
     "Live Video": "live_video",
@@ -369,6 +392,7 @@ class Extractor:
             payer=rule.payer,
             modality=rule.modality,
             service=rule.service,
+            service_category=rule.service_category,
             compact=rule.compact,
             conditions=rule.conditions,
             quote=rule.quote,

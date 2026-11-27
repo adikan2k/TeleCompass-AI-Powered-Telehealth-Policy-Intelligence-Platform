@@ -60,7 +60,7 @@ def test_results_list_every_run_with_its_instructions_version(conn: Connection) 
 
 def test_instructions_cover_the_weak_points_the_first_review_found() -> None:
     prompt = extract.SYSTEM_PROMPT
-    assert extract.PROMPT_VERSION == "v2"
+    assert extract.PROMPT_VERSION == "v3"
     assert "never be broader than the SOURCE" in prompt
     assert "Skip veterinary medicine" in prompt
     assert "Do not take a modality from the POINTER" in prompt

@@ -4,17 +4,22 @@ import argparse
 import sys
 from collections import Counter
 from collections.abc import Sequence
+from datetime import date
 from decimal import Decimal
+from typing import get_args
 
 from telecompass import (
     config,
     db,
+    engine,
     extract,
     fetch,
     grade,
     label_app,
     llm,
     parse_cchp,
+    pointers,
+    preflight,
     review,
     rule_store,
     show,
@@ -99,7 +104,12 @@ def cmd_sources(args: argparse.Namespace) -> int:
         urls = sources.cited_urls(store.stored_entries_for(conn, run.id))
         print(f"{len(urls)} cited links. One request at a time per site, so this takes a while.")
         results = sources.fetch_sources(
-            conn, fetch.Fetcher(conn, client), urls, sources.load_overrides(), args.retry
+            conn,
+            fetch.Fetcher(conn, client),
+            urls,
+            sources.load_overrides(),
+            args.retry,
+            args.reread,
         )
     for outcome, count in sorted(Counter(result.outcome for result in results).items()):
         print(f"  {outcome}: {count}")
@@ -142,6 +152,53 @@ def cmd_extract(args: argparse.Namespace) -> int:
     print(f"  spent: ${totals['cost_usd']:.4f}")
     print(f"  entries: {dict(items)}")
     print(f"  rules by status: {dict(rules)}")
+    return 0
+
+
+def cmd_pointers(args: argparse.Namespace) -> int:
+    """Store our hand-written pointers to official pages as entries. No network."""
+    with _open_database() as conn:
+        run = pointers.store_pointers(
+            conn, args.jurisdiction, pointers.pointer_file(args.jurisdiction), fetch.utc_now()
+        )
+    print(f"Stored {run.entry_count} pointer(s) for {args.jurisdiction} as parse run {run.id}.")
+    for note in run.problems:
+        print(f"  - {note}")
+    return 0
+
+
+def _visit_from(args: argparse.Namespace) -> engine.Visit:
+    on = date.fromisoformat(args.date) if args.date else date.today()
+    if args.demo:
+        return preflight.demo_visit(on)
+    drug = None
+    if args.drug:
+        drug = engine.Prescription(drug=args.drug, schedule=args.schedule, renewal=args.renewal)
+    return engine.Visit(
+        profession=args.profession,
+        licensed_in=[code.upper() for code in args.licensed],
+        registered_in=[code.upper() for code in args.registered],
+        patient_state=args.patient_state.upper(),
+        modality=args.modality,
+        payer=args.payer,
+        service=args.service,
+        service_category=args.service_category,
+        prescription=drug,
+        visit_date=on,
+    )
+
+
+def cmd_preflight(args: argparse.Namespace) -> int:
+    """Decide one visit on one date from the stored rules. No model is called."""
+    try:
+        visit = _visit_from(args)
+    except ValueError as error:
+        print(f"That visit is not valid: {error}", file=sys.stderr)
+        return 1
+    with _open_database() as conn:
+        decision, decision_id = preflight.run_preflight(conn, visit, fetch.utc_now())
+        fetched = conn.execute("SELECT max(fetched_at) AS at FROM source_text").fetchone()["at"]
+    print(preflight.render(decision, decision_id, f"{fetched:%Y-%m-%d}" if fetched else "never"))
     return 0
 
 
@@ -220,12 +277,37 @@ def build_parser() -> argparse.ArgumentParser:
     sources_cmd.add_argument(
         "--retry", action="store_true", help="Ask again for documents that failed before."
     )
+    sources_cmd.add_argument(
+        "--reread", action="store_true", help="Read stored documents again; no new request."
+    )
     sources_cmd.set_defaults(run=cmd_sources)
 
     extract_cmd = commands.add_parser("extract", help="Read the fetched law into rules.")
     extract_cmd.add_argument("jurisdiction", type=str.lower)
     extract_cmd.add_argument("--cap", default="5.00", help="Hard cost cap in US dollars.")
     extract_cmd.set_defaults(run=cmd_extract)
+
+    pointers_cmd = commands.add_parser("pointers", help="Store our pointers to official pages.")
+    pointers_cmd.add_argument("jurisdiction", type=str.lower)
+    pointers_cmd.set_defaults(run=cmd_pointers)
+
+    pre = commands.add_parser("preflight", help="Decide one visit on one date.")
+    pre.add_argument("--demo", action="store_true", help="The plan's example visit.")
+    pre.add_argument("--date", help="Visit date, YYYY-MM-DD. Default: today.")
+    pre.add_argument("--profession", default="physician")
+    pre.add_argument("--licensed", nargs="*", default=[], help="State codes, e.g. NY NJ.")
+    pre.add_argument("--registered", nargs="*", default=[], help="Telehealth registrations.")
+    pre.add_argument("--patient-state", default="FL")
+    pre.add_argument("--modality", default="live_video", choices=get_args(engine.Modality))
+    pre.add_argument(
+        "--payer", default="medicaid", choices=["medicaid", "medicare", "private", "self_pay"]
+    )
+    pre.add_argument("--service")
+    pre.add_argument("--service-category", default="other", choices=["behavioral_health", "other"])
+    pre.add_argument("--drug", help="What is prescribed, if anything.")
+    pre.add_argument("--schedule", choices=["II", "III", "IV", "V"], help="Controlled schedule.")
+    pre.add_argument("--renewal", action="store_true")
+    pre.set_defaults(run=cmd_preflight)
 
     review_cmd = commands.add_parser("review", help="Second-model check of each rule.")
     review_cmd.add_argument("jurisdiction", type=str.lower)

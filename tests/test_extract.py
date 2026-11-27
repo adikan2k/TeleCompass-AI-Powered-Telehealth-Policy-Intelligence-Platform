@@ -37,6 +37,7 @@ def extracted(quote: str, **fields: object) -> ExtractedRule:
         "payer": "private",
         "modality": "any",
         "service": None,
+        "service_category": "any",
         "compact": None,
         "conditions": [],
         "quote": quote,

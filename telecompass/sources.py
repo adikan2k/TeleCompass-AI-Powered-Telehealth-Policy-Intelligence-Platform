@@ -81,7 +81,26 @@ def pdf_to_text(data: bytes) -> str | None:
         pages = [page.extract_text() or "" for page in reader.pages]
     except Exception:  # noqa: BLE001 - a broken PDF must not stop the run
         return None
-    return _tidy("\n".join(pages))
+    return _tidy(repair_ligatures("\n".join(pages)))
+
+
+_LIGATURES = {"ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi", "ﬄ": "ffl"}
+_BROKEN_FF = re.compile(r"(?<=[a-z])P(?=[a-z]|\b)")
+
+
+def repair_ligatures(text: str) -> str:
+    """Undo two artefacts of PDF text, so the stored text reads as the page does.
+
+    Some PDFs store "fi" or "fl" as one joined character; those are split back into letters.
+    Some fonts have no letter mapping for the joined "ff", and it comes out as a capital P
+    ("ePective" for "effective"). That second repair runs only when the text has no "ff" at
+    all, which a normal page of English never lacks, so it cannot touch a healthy document.
+    """
+    for joined, letters in _LIGATURES.items():
+        text = text.replace(joined, letters)
+    if "ff" not in text:
+        text = _BROKEN_FF.sub("ff", text)
+    return text
 
 
 def word_pieces_text(word: bytes, table: bytes) -> str:
@@ -218,7 +237,7 @@ def reread_stored(conn: Connection, attempt: SourceText) -> SourceText | None:
         content_type=attempt.content_type or "",
     )
     text = extract_text(page)
-    if not text:
+    if not text or text == attempt.text:
         return None
     return store.save_source_text(
         conn,
@@ -242,18 +261,21 @@ def fetch_source(
     url: str,
     overrides: dict[str, Override],
     retry: bool = False,
+    reread: bool = False,
 ) -> SourceText:
     """Get one cited document, or record why we could not.
 
     A document is asked for once. A later run does not ask again unless `retry` is set or a
     confirmed official copy now points somewhere new. A stored document that could not be read
-    is read again from the stored copy, never fetched again.
+    is read again from the stored copy, never fetched again. With `reread`, a document already
+    read is read again from the stored copy too, and a new row is added if the text differs
+    (for example after a reader was improved).
     """
     existing = store.latest_source_text(conn, url)
     override = overrides.get(url)
     fetch_url = override.official_url if override else url
     if existing is not None and existing.outcome == FETCHED:
-        return existing
+        return (reread_stored(conn, existing) or existing) if reread else existing
     if existing is not None and existing.outcome == UNREADABLE:
         return reread_stored(conn, existing) or existing
     if existing is not None and existing.fetch_url == fetch_url and not retry:
@@ -308,6 +330,7 @@ def fetch_sources(
     urls: list[str],
     overrides: dict[str, Override],
     retry: bool = False,
+    reread: bool = False,
 ) -> list[SourceText]:
     """Fetch every cited document once, in order."""
-    return [fetch_source(conn, fetcher, url, overrides, retry) for url in urls]
+    return [fetch_source(conn, fetcher, url, overrides, retry, reread) for url in urls]

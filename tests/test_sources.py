@@ -272,3 +272,36 @@ def test_doorway_page_is_followed_one_step_to_the_document(conn: Connection) -> 
     assert result.outcome == sources.FETCHED
     assert result.text == "The rule text itself."
     assert result.final_url == document
+
+
+def test_joined_letters_in_pdf_text_are_split_back() -> None:
+    assert sources.repair_ligatures("beneﬁciaries of an oﬃce, eﬀective") == (
+        "beneficiaries of an office, effective"
+    )
+
+
+def test_capital_p_for_a_lost_ff_is_repaired_only_when_the_text_has_no_ff() -> None:
+    broken = "The staP in the oPice say it is ePective and diPerent. CPT codes and Part B stay."
+    assert sources.repair_ligatures(broken) == (
+        "The staff in the office say it is effective and different. CPT codes and Part B stay."
+    )
+    healthy = "An effective ePrescribing tool on an iPhone."
+    assert sources.repair_ligatures(healthy) == healthy
+
+
+def test_reread_adds_a_row_only_when_the_text_comes_out_differently(
+    conn: Connection, monkeypatch
+) -> None:
+    seen: list[str] = []
+    fetcher = fetcher_for(conn, site({CODE_59_1: html(LAW_HTML)}, seen=seen))
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+
+    same = sources.fetch_source(conn, fetcher, CODE_59_1, {}, reread=True)
+    assert same == first
+
+    monkeypatch.setattr(sources, "extract_text", lambda page: "A better reading of the page.")
+    better = sources.fetch_source(conn, fetcher, CODE_59_1, {}, reread=True)
+
+    assert better.id != first.id and better.text == "A better reading of the page."
+    assert (better.sha256, better.fetched_at) == (first.sha256, first.fetched_at)
+    assert seen.count(CODE_59_1) == 1  # the site was asked once, in the first fetch only

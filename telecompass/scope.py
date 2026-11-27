@@ -5,6 +5,7 @@ MEDICAID_MODALITY = "medicaid_modality"
 CONSENT = "consent"
 ONLINE_PRESCRIBING = "online_prescribing"
 PRIVATE_PAYER_PARITY = "private_payer_parity"
+MEDICARE_TELEHEALTH = "medicare_telehealth"  # federal, dated; not one of the five state types
 
 RULE_TYPES = (
     CROSS_STATE_LICENSURE,
@@ -20,6 +21,7 @@ RULE_TYPE_LABELS = {
     CONSENT: "Consent",
     ONLINE_PRESCRIBING: "Online prescribing",
     PRIVATE_PAYER_PARITY: "Private payer parity",
+    MEDICARE_TELEHEALTH: "Federal Medicare telehealth rules and their dates",
 }
 
 # (CCHP category, CCHP topic) -> rule type. Anything not listed is out of scope.
@@ -35,7 +37,13 @@ TOPIC_RULE_TYPES = {
     ("Professional Requirements", "Online Prescribing"): ONLINE_PRESCRIBING,
     ("Private Payer", "Parity"): PRIVATE_PAYER_PARITY,
     ("Private Payer", "Requirements"): PRIVATE_PAYER_PARITY,
+    # Our own pointers to CMS pages (telecompass/data/federal_pointers.toml), not CCHP topics.
+    ("Medicare", "Telehealth flexibilities"): MEDICARE_TELEHEALTH,
 }
+
+# State codes for the jurisdictions we hold.
+STATE_JURISDICTIONS = {"FL": "florida"}
+FEDERAL = "federal"
 
 
 def rule_type_for(category: str, topic: str) -> str | None:

@@ -119,6 +119,7 @@ class Rule(BaseModel):
     payer: str | None = None
     modality: str | None = None
     service: str | None = None
+    service_category: str = "any"
     compact: str | None = None
     conditions: list[str] = []
     summary: str

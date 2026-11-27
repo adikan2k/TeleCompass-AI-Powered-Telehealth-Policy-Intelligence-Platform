@@ -11,13 +11,14 @@ M2_TABLES = {
     "label",
     "auto_review",
 }
+M3_TABLES = {"decision"}
 
 
 def test_migrate_creates_every_table(conn: Connection) -> None:
     rows = conn.execute(
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
     ).fetchall()
-    assert {row["table_name"] for row in rows} == M1_TABLES | M2_TABLES
+    assert {row["table_name"] for row in rows} == M1_TABLES | M2_TABLES | M3_TABLES
 
 
 def test_migrate_twice_applies_nothing_new(conn: Connection) -> None:

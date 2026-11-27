@@ -27,6 +27,10 @@ phone, will the payer pay, and may a controlled medicine be prescribed.
   the answer for a visit in 2026 differs from the same visit in 2028.
 - **Double-checks itself.** A second model reviews every rule against the law. Its verdicts are
   reported as an automated check, never as a human one.
+- **Tracks change.** Each copy of a policy page is kept. Two copies are compared entry by entry;
+  an agent reads the law behind each real change and proposes rules to add or retire, then waits.
+  Nothing reaches the answers until a person approves it. The "What changed" page lists, for the
+  states you serve, what moved, what was approved, and which rules start or end soon.
 
 ## An example
 
@@ -71,8 +75,11 @@ online prescribing and private-plan duties.
 - **Some law could not be read.** Two sites that Florida's index cites forbid automated
   fetching, and TeleCompass does not fetch where a site says no. Eleven Florida entries have no
   rules for that reason, including the only source on Medicaid store-and-forward.
-- **State rules rarely state a start date.** TeleCompass can say what the law as fetched says,
-  not what it said on an earlier date.
+- **State rules rarely state a start date.** TeleCompass can say what the law as fetched says.
+  A change is dated by the copy of the page that first showed it, so it is only as precise as
+  the gap between two copies.
+- **The monthly schedule runs on this machine for now.** It is written and tested, but not yet
+  running on a server.
 
 ## How it is built
 
@@ -84,9 +91,13 @@ CCHP state page ──> entries with their cited sources
         model reads law into rules ──> code checks every quote ──> second model reviews
                          │
         rules engine (plain Python) + a visit + a date ──> answer with quotes
+
+monthly: new copy ──> diff ──> agent proposes ──> a person approves ──> live rules ──> dbt checks
 ```
 
 - **Python 3.11+**, FastAPI, PostgreSQL. The package is in [`telecompass/`](telecompass/).
+- **LangGraph** runs the change agent and its pause for a person; **dbt** builds the lineage
+  tables and data tests; **Dagster** schedules the month.
 - **OpenAI models** read law into rules and review them. Every model call is counted in the
   database, capped per run, and traced in Langfuse.
 - **Site**: Next.js, Tailwind, Anime.js and a small three.js compass in [`web/`](web/), tested
@@ -114,6 +125,18 @@ uv run python -m telecompass extract florida    # needs OpenAI and Langfuse keys
 uv run python -m telecompass review florida
 uv run python -m telecompass grade florida      # writes evals/results/
 uv run python -m telecompass preflight --demo
+```
+
+Change over time (run monthly by a Dagster schedule, or by hand):
+
+```
+uv run python -m telecompass wayback florida --at 20260521160700   # an older copy, from the Internet Archive
+uv run python -m telecompass diff florida       # what changed between the last two copies
+uv run python -m telecompass sources florida --refresh   # has the cited law itself changed?
+uv run python -m telecompass changes florida    # the agent proposes rule changes, then waits
+uv run python -m telecompass approve            # review page: approve proposals at /changes
+uv run python -m telecompass dbt build          # lineage tables and data tests
+uv run --extra pipeline dagster dev -m telecompass.orchestration   # the monthly schedule
 ```
 
 The API and the site, locally:

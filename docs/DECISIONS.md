@@ -25,6 +25,10 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D17 | A person approves or rejects each rule on a local review page; the live site uses approved rules only; reviews are added rows, rules never change | 2026-11-27 | Chosen by Aditya, logged |
 | D18 | API on Cloud Run (us-east4) beside Neon; database address in Secret Manager; approved rules only; scales to zero for now | 2026-11-27 | Logged |
 | D19 | Site on Vercel at telecompass.vercel.app, deployed from this machine; GitHub to be connected after the push | 2026-11-27 | Logged |
+| D20 | Every copy of a page is a snapshot; real history from the Internet Archive; entry-by-entry diffs; monthly re-check of the cited law | 2026-11-27 | Logged |
+| D21 | LangGraph change agent proposes rule additions and retirements from a diff, then waits; nothing goes live until a person approves and applies | 2026-11-27 | Logged |
+| D22 | dbt models and data tests for lineage; a Dagster job runs the month on the 1st | 2026-11-27 | Logged |
+| D23 | "What changed for you": page changes, approved rule changes and dates ahead, per state and line of care | 2026-11-27 | Logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -36,7 +40,8 @@ Open items:
 - Human labels: none yet. The labelling page is ready (`python -m telecompass label florida`)
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
-- Four candidate official copies wait for a person to confirm them (D7).
+- Four candidate official copies wait for a person to confirm them on the local `/sources` page (D7, D21).
+- Choose where the monthly Dagster job runs for real (D22).
 
 ---
 
@@ -815,3 +820,88 @@ first, and the GitHub connection follows the push.
 
 **Trade-off.** Until GitHub is connected, a change reaches the site only when someone runs the
 deploy command.
+
+
+## D20. Change over time: snapshots, history, diffs and the monthly re-check
+
+**What.** Every copy of a state's policy page is kept as its own snapshot with where it came
+from (`live` or `wayback`) and the moment it represents. Two parsed snapshots are compared entry
+by entry (matched on category, topic and subtopic) and each difference is stored as an added,
+removed or changed entry. Wording-only edits (punctuation, case, "the") are stored as
+`reworded` and do not start a review. Once a month the law each live rule quotes is asked for
+again; a new row is stored only when the document's bytes changed, and the change is logged in
+`source_change`.
+
+- Real history comes from the Internet Archive: `wayback florida --at 20260521160700` stores
+  the 21 May 2026 capture of the CCHP Florida page, read through the Archive's raw-capture
+  address after its robots rules were checked.
+- `diff florida` compared that copy with today's: 6 real changes in scope (Live Video eligible
+  services changed, four new Medicaid remote-monitoring entries, Licensure Compacts changed).
+
+**Considered.** Waiting a month for a second live copy (too slow to prove anything); hashing the
+whole page (says "something changed" but not what); a text diff of the page (noisy, and it would
+show CCHP's words, against rule 15).
+
+**Trade-off.** Matching on category, topic and subtopic means a renamed topic shows as one entry
+removed and one added. That is visible and safe, just noisier than a perfect match.
+
+## D21. The change agent and the review queue
+
+**What.** A LangGraph graph with three steps: propose, wait for a person, apply. For each real
+change in a diff it fetches the law the entry cites, reads it into rules with the same extractor
+and quote check as M2, and proposes `add` (a new rule), `retire` (a live rule whose entry was
+removed), `already_live`, `unreadable` or `no_rules`. It then stops (`interrupt`) with its state
+saved in Postgres, so the pause survives restarts. A person approves or rejects each proposal on
+the local review page (`/changes`) and presses Apply; only then do approved rules join the live
+set and retired ones leave it, from the date of the snapshot that showed the change.
+
+- Rules are never edited: an addition is a new rule row with a review, a retirement is a row in
+  `rule_retirement` (rule 12). Rejected proposals change nothing.
+- The agent's model calls go through the same cost-capped, Langfuse-traced client: 2 US dollars
+  per diff.
+- Where a cited page forbids fetching, the agent says so (`unreadable`) and does not guess
+  (rule 11). The local `/sources` page lets a person confirm an official copy for such a link.
+
+**Considered.** A plain script with a status column (works, but the pause and resume would be
+hand-written); letting the model decide what to retire (it would be deciding, against rule 9; the
+retire proposals come from code matching removed entries to live rules).
+
+**Trade-off.** LangGraph is one more library and its checkpoint tables live in the same
+database. In return the "stop and wait for a person" step is explicit and tested.
+
+## D22. dbt for lineage and data tests; Dagster for the monthly schedule
+
+**What.** A dbt project in `dbt/` builds views and tables in an `analytics` schema: rule lineage
+(rule, quote, source document, snapshot), decision lineage (decision, rules, quotes, snapshots),
+entry changes with their review outcome, and upcoming dates. Five data tests guard the promises:
+approved rules have verified quotes, live rules trace to the law and a snapshot, decisions use
+known rules, change-run rules come from their diff, retired rules are not live.
+`python -m telecompass dbt build` runs it (34 checks pass). dbt runs as its own pinned tool
+through `uvx`, outside the app's libraries.
+
+A Dagster job (`telecompass/orchestration.py`) runs the month in order: snapshot and parse each
+state, diff, re-check the law, start the change agent, rebuild dbt. It is scheduled for 06:00 on
+the 1st of each month (New York time). Each step calls the same command a person would run, and
+a failed step stops the steps after it.
+
+**Considered.** Plain SQL views (no tests or docs); cron alone (no run history or retry view);
+installing dbt into the project (its resolver forced an old dbt version).
+
+**Trade-off.** Two more tools to explain. Dagster is an optional extra (`pipeline`) so the API
+image does not carry it. Where the schedule runs for real (a small always-on machine or a cloud
+job) is not set up yet; today it runs locally with `dagster dev`.
+
+## D23. What changed for you
+
+**What.** `GET /changes?states=FL&care=behavioral_health` and the site page `/changes`. Pick the
+states you serve and a line of care; for each state (and always for federal Medicare) it lists:
+what changed on the policy page between the last two copies and where each change stands in
+review; rules added or retired after a person approved it, each with its exact quote and link;
+and live rules that start or end from 90 days ago to two years ahead. Only topics are shown from
+CCHP, never its text (rule 15). No model is called.
+
+**Considered.** An email digest (needs accounts and addresses: personal data we do not want); a
+one-year window (it hid the main Medicare deadline, 31 December 2027, 13 months away).
+
+**Trade-off.** One state is held today, so the state picker is short. It grows as states are
+read, with no change to the page.

@@ -8,12 +8,20 @@ dynamic = ["version"]
 description = "Telehealth visit preflight: is this visit allowed and payable on a given date."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "httpx>=0.29.0",
+    "lxml>=6.1.3",
+    "psycopg[binary]>=3.3.9",
+    "pydantic>=2.14.4",
+    "python-dotenv>=1.2.4",
+]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
     "ruff>=0.6",
+    "testcontainers>=4.15.0",
 ]
 
 [tool.hatch.version]

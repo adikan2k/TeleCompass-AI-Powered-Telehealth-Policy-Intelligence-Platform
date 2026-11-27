@@ -1,0 +1,21 @@
+# Local development database. Not for production.
+# It has no password and listens on 127.0.0.1 only, so it cannot be reached from other machines.
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: telecompass
+      POSTGRES_DB: telecompass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - telecompass_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telecompass -d telecompass"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  telecompass_pgdata:

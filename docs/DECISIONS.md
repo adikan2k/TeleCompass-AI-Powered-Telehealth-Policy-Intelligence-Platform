@@ -8,16 +8,22 @@ The decisions that mattered, newest last. Details are in the entries below.
 |---|---|---|---|
 | D1 | Flat `telecompass/` Python package at the repo root, hatchling build, uv for the environment | 2026-11-26 | Approved by Aditya |
 | D2 | CCHP has no `robots.txt` (404). Fetching is not forbidden by robots rules; terms of use still to be read before M1 | 2026-11-26 | Approved by Aditya |
-| D3 | CCHP's terms of use are referenced but not published where we could find them. Fetch Florida once under our own strict limits; Aditya may write to CCHP | 2026-11-26 | Approved by Aditya |
+| D3 | CCHP's terms of use are referenced but not published where we could find them. Fetch Florida once under our own strict limits. Aditya decided not to write to CCHP | 2026-11-26 | Approved by Aditya |
 | D4 | Postgres through psycopg 3 and plain SQL migration files. Local Postgres in Docker for now, Neon when the site goes live. Tests use a throwaway Postgres container | 2026-11-26 | Approved by Aditya |
 | D5 | Fetcher: httpx, robots check on every run, one request at a time with a 10 second wait, refuses a second fetch of a page it already holds | 2026-11-26 | Approved by Aditya |
 | D6 | Parser: BeautifulSoup, written against the stored snapshot, tested on an invented page. `show` prints short excerpts only | 2026-11-26 | Approved by Aditya |
+| D7 | Fetch the law each Florida entry cites, only from sites whose robots.txt allows it. Two sites forbid it, so 11 entries get no rules and are reported as a gap | 2026-11-26 | Approved by Aditya |
+| D8 | Rule schema and extraction: `gpt-6.2-sol` with structured outputs reads the law into typed rules. Code, not the model, checks every quote and sets every status | 2026-11-26 | Approved by Aditya |
+| D9 | One model client: every call counted in the database, a hard cost cap per run (5 US dollars for Florida), every call traced in Langfuse, no run without Langfuse keys | 2026-11-26 | Approved by Aditya |
+| D10 | Grade: plain Python turns rules into yes or no for the 10 answer-key lines that the five rule types cover, and writes `evals/results/extraction_florida.json` | 2026-11-26 | Approved by Aditya |
+| D11 | Labelling screen: a local FastAPI page that shows Aditya 30 rules, one at a time, beside the source text, without the grade or the quote-check result | 2026-11-26 | Approved by Aditya |
 
 Open items:
 
-- CCHP's terms of use: not found on the site (see D3). Aditya to decide whether to ask CCHP.
 - The fetcher re-checks `robots.txt` at the start of every run, in case one appears.
 - Create the Neon project and move the database there before the site goes live in M4.
+  Confirmed by Aditya on 2026-11-26.
+- Aditya creates a Langfuse project and sets its keys before the first extraction run (D9).
 
 ---
 
@@ -107,8 +113,8 @@ link back (rule 15).
 **Trade-off.** We act without having read terms the site says exist. If CCHP later publishes or
 sends terms that forbid this use, we stop fetching and delete the stored snapshots.
 
-**For Aditya.** Writing to `info@cchpca.org` to describe the project and ask for the terms is
-yours to do. It is not required for M1.
+**Follow-up, 2026-11-26.** Aditya decided not to write to CCHP. The limits above stay as the
+whole of our conduct towards the site.
 
 ## D4. Database and how it is tested
 
@@ -223,3 +229,185 @@ runs the parser over the stored snapshot when a database is present and checks t
 
 **No model calls in M1.** So there is nothing to trace in Langfuse and no cost cap to set yet
 (rule 20).
+
+## D7. Fetching the cited law
+
+**Scope.** The five rule types map to these Florida topics, and nothing else is fetched in M2:
+
+| Rule type | CCHP topics | Entries | With a SOURCE line |
+|---|---|---|---|
+| Cross-state licensure and registration | Professional Requirements: Cross State Licensing, Licensure Compacts | 10 | 9 |
+| Medicaid coverage by modality | Medicaid: Live Video, Store and Forward, Remote Patient Monitoring, Email Phone & Fax | 26 | 19 |
+| Consent | Consent Requirements under Medicaid and under Professional Requirements | 2 | 0 |
+| Online prescribing | Professional Requirements: Online Prescribing | 5 | 5 |
+| Private payer parity | Private Payer: Parity, Requirements | 4 | 4 |
+
+That is 47 entries, 37 with a SOURCE line, citing 25 distinct links on 12 sites.
+
+**What robots.txt says.** Each site was asked once on 2026-11-27 (UTC), through our own fetcher,
+and the requests are in `fetch_log`.
+
+| Site | What it is | robots.txt | Links |
+|---|---|---|---|
+| `www.leg.state.fl.us` | Florida Statutes | allows | 9 |
+| `www.flrules.org` | Florida Administrative Code | allows | 1 |
+| `ahca.myflorida.com` | Medicaid coverage policies (PDF) | allows | 2 |
+| `flboardofmedicine.gov` | Board of Medicine | allows, asks for 3 seconds between requests | 1 |
+| `imlcc.com`, `ptcompact.org`, `aslpcompact.com`, `counselingcompact.org` | Licensure compacts | allow (Counseling Compact asks for 10 seconds) | 4 |
+| `www.nursecompact.com` | Nurse Licensure Compact | no robots.txt (404) | 1 |
+| `psypact.org` | PSYPACT | could not connect | 1 |
+| `www.icontact-archive.com` | Archive of Florida Medicaid alert emails | **forbids** | 4 |
+| `track.govhawk.com` | Bill tracker (the budget bill) | **forbids** | 2 |
+
+**Decision.**
+
+- Fetch only from sites that allow it, with the M1 fetcher: robots check each run, one request
+  at a time per site, our 10 second wait or the site's own if longer.
+- Never fetch from the two sites that forbid it. The 11 entries whose only source is there get
+  no rules. They are counted and listed in the results as "source not fetchable". This includes
+  the only source for Medicaid store-and-forward, so that answer-key line cannot be backed.
+- A site that cannot be reached is tried once and reported, not retried in a loop.
+- Each document goes into `source_text`: url, fetch time, SHA-256, status, content type, the
+  raw body, and the plain text taken from it. HTML is read with BeautifulSoup and PDF with
+  pypdf. Any other type is stored and reported as unread.
+- If a link opens a doorway page that only points to the document (the Administrative Code
+  site may work this way), the fetcher may follow one link on the same site to the document.
+  Each such step is written in code for that one site. A model never chooses a link.
+- The same document cited by several entries is fetched once.
+
+**Considered.**
+
+- Finding the Medicaid alerts and the budget bill on official sites that allow fetching
+  (the agency's own site, the Florida Senate). This would close most of the gap, but a person
+  has to confirm each replacement is the same document. Left as a later step for Aditya to
+  approve link by link.
+- Asking a model to browse for the law. Rejected: rule 16, and it could not be repeated.
+
+**Trade-off.** Florida's Medicaid numbers will be weaker than they could be, and the results
+say why. That is preferred over fetching where a site says not to.
+
+## D8. Rules and extraction
+
+**What.** A `rule` table as in the plan, plus the lineage that makes a rule traceable:
+
+- What it is: jurisdiction, rule type, effect (`allow`, `deny`, `require`, `silent`), who and
+  what it applies to (profession, payer, modality, service), conditions, a one-sentence summary.
+- Evidence: the quote, the `source_text` row it came from, and that row's fetch date.
+- Dates: `effective_from` and `effective_to`. They are filled only when the law states them.
+  Empty means "in force when fetched, start not stated", never a guessed date.
+- Status: `draft`, `unverified` or `approved`, and who approved it.
+- Lineage: the entry it came from and the extraction run that made it.
+
+How rules are made:
+
+- For each in-scope entry with a fetched source, one call to `gpt-6.2-sol` through
+  `client.responses.parse` with a pydantic schema (structured outputs). The model gets the
+  text of the law and the CCHP entry as a pointer to the part that matters. It returns rules
+  whose quote must be copied from the law, or says the law is silent on the point.
+- Code then checks each quote: it must appear word for word in the stored source text, with
+  only runs of whitespace treated as equal. Pass gives `draft`. Fail gives `unverified`, kept
+  and shown as such (rule 10). The model never sets a status.
+- An entry marked "No Reference Found" becomes a `silent` rule written by code with no model
+  call (rule 11). The model is told to return nothing when the law does not address the point.
+- If a law is too long to send whole, code picks the passages that share the most words with
+  the entry, and the run records that the source was cut.
+- Nothing becomes `approved` in M2. Rules wait as `draft` for a person (rule 13).
+- Calls are made one at a time, not in batch mode, so the first run's failures are easy to see.
+  Batch mode is for the monthly re-reads in M5.
+
+**Why.** It keeps the model to the one job rule 9 allows: reading text into rules. Everything
+that decides trust (the quote check, the status, the silent case) is plain code with tests.
+
+**Considered.**
+
+- Letting the model read the CCHP entry alone. Rejected: the evidence must be the law (rule 15).
+- Sending only the law, without the CCHP entry. Purer, but on a long statute the model would
+  return every rule in it, most of them not about telehealth.
+- Embedding search to pick passages from long laws. Word overlap is simpler to explain and
+  repeat; embeddings arrive when search is needed.
+
+**Trade-off.** CCHP's entry text is sent to OpenAI as part of the prompt. It is used for
+processing only and is never shown or stored anywhere new.
+
+## D9. Model client, cost cap and tracing
+
+**Checked against OpenAI's documentation on 2026-11-26.** Both model IDs exist as written.
+Per million tokens: `gpt-6.2-sol` 2.00 US dollars in, 0.10 cached, 10.00 out; `gpt-6-luna`
+0.10 in, 0.01 cached, 0.50 out. Structured outputs use `client.responses.parse(...,
+text_format=Model)` and `response.output_parsed`. `gpt-6.2-sol` rejects reasoning effort `none`.
+
+**What.** One module, `telecompass/llm.py`, is the only place that calls a model.
+
+- Every call writes a row to `model_call`: run, model, tokens in, cached and out, cost in US
+  dollars worked out from the price table in code, time, and whether it failed (rule 21).
+- Each run has a hard cap. Before a call, code adds up the run's spend in the database and
+  refuses the call if the cap could be passed. Florida's cap is 5.00 US dollars. The estimate
+  for the 25 or so calls is 2 to 3 dollars.
+- Every call is traced in Langfuse (rule 20), as a generation with the run and entry ids.
+- A refusal, a cut-off answer or an API error is recorded and the entry is reported as failed.
+  It is never retried silently and never replaced with a guess.
+- If the Langfuse keys are missing the run does not start. Tests use a fake model client and
+  make no network call.
+
+**Environment.** `OPENAI_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and the
+Langfuse address. Langfuse's current documentation names that last one `LANGFUSE_BASE_URL`;
+the plan says `LANGFUSE_HOST`. The code reads `LANGFUSE_BASE_URL` first, then `LANGFUSE_HOST`.
+
+**Considered.** Langfuse's drop-in OpenAI import. Its documentation does not confirm support
+for the Responses API, so calls are traced explicitly instead. LiteLLM or LangChain as a
+wrapper: more layers than one provider needs.
+
+**Trade-off.** No extraction can run until Aditya has created a Langfuse project and set the
+keys. That is a deliberate stop, not a soft warning.
+
+## D10. The grade
+
+**What.** `python -m telecompass grade florida` compares the rules with CCHP's "At a Glance"
+answers and writes `evals/results/extraction_florida.json`.
+
+Ten answer-key lines fall inside the five rule types:
+
+- Medicaid reimbursement (4): Live Video, Store-and-Forward, Remote Patient Monitoring, Audio Only.
+- Private payer law (2): Law Exists, Payment Parity.
+- Professional requirements (4): Licensure Compacts (a list of compacts), Limited Licensure
+  Exceptions, Telehealth Specific License/Registration Process, Consent Requirements.
+
+For each line, plain Python derives our answer from the rules that passed the quote check, for
+example "Medicaid, audio only: is there an `allow` rule for that modality?". The mapping is a
+small table in code with tests. Our answer is `yes`, `no` or `silent`, and `silent` against a
+CCHP "Yes" counts as a miss, shown separately from a wrong answer.
+
+The file also holds: the quote-check pass rate, counts of rules by status and type, entries
+with no fetchable source, failed calls, the model, the cost, and the run id and time. Online
+prescribing has no answer-key line, so it is covered by Aditya's labels only.
+
+**Why.** Rule 19: every number shown later must come from a file under `evals/results/`.
+
+**Considered.** Asking a model to judge whether our rules agree with the answer key. Rejected:
+a grade should be repeatable, and a judging model would need its own grade.
+
+**Trade-off.** Ten lines is a very small test. The file says so, gives no interval for one
+state, and M6 widens it to six states.
+
+## D11. The labelling screen
+
+**What.** `python -m telecompass label florida` starts a small FastAPI app on `127.0.0.1` only.
+
+- It draws 30 rules with a fixed random seed, spread across the five rule types, from both
+  `draft` and `unverified` rules. The sample is stored, so the same 30 come back each time.
+- One rule per page: the rule in plain words, its quote, and the surrounding text of the law
+  with a link to the source. Buttons: Right, Wrong, Cannot tell, and an optional note.
+- Blind means the page does not show the quote-check result, the status, the grade or the
+  CCHP entry, so the judgement rests on the law alone.
+- Labels go to a `label` table with the time. `python -m telecompass grade florida` then adds
+  them to the results file. Until Aditya has labelled, the file says 0 of 30 labelled. Nothing
+  writes a label except his click (rule 6).
+
+**Why.** FastAPI is already the plan's choice for the API in M4, so this adds no new kind of
+tool. A page shows a long passage of law far better than a terminal.
+
+**Considered.** A terminal prompt (hard to read long text). A page in the Next.js site (the
+site is not rebuilt until M4, and labels would then pass through a public app).
+
+**Trade-off.** A second small web surface exists before the real API. It listens locally only
+and has no login.

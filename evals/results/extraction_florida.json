@@ -1,0 +1,273 @@
+{
+  "jurisdiction": "florida",
+  "generated_at": "2026-11-27T05:25:07.346198+00:00",
+  "not_legal_advice": "Not legal advice. Sources last fetched 2026-11-27.",
+  "run": {
+    "id": 1,
+    "model": "gpt-6.2-sol",
+    "started_at": "2026-11-27T05:19:08.291771+00:00",
+    "cap_usd": 5.0,
+    "parse_run_id": 1
+  },
+  "cost": {
+    "model_calls": 24,
+    "failed_calls": 0,
+    "input_tokens": 139113,
+    "cached_tokens": 0,
+    "output_tokens": 20739,
+    "cost_usd": 0.555134
+  },
+  "entries": {
+    "in_scope": 47,
+    "by_outcome": {
+      "rules": 20,
+      "source_not_fetchable": 11,
+      "silent_no_reference": 9,
+      "source_not_fetched": 2,
+      "silent_model": 4,
+      "no_source_line": 1
+    },
+    "sources_cut_to_fit": 1,
+    "without_rules": [
+      {
+        "category": "Private Payer",
+        "topic": "Requirements",
+        "subtopic": null,
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://track.govhawk.com/public/bills/2188802"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Email, Phone & Fax",
+        "subtopic": null,
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=863154&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Email, Phone & Fax",
+        "subtopic": null,
+        "outcome": "source_not_fetched",
+        "note": "failed: https://ahca.myflorida.com/content/download/24380/file/59G-4.190%20Laboratory%20Services%20Coverage%20Policy.pdf"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Live Video",
+        "subtopic": "POLICY",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=863154&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Live Video",
+        "subtopic": "ELIGIBLE SERVICES/SPECIALTIES",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=863310&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Live Video",
+        "subtopic": "ELIGIBLE SERVICES/SPECIALTIES",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=870777&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Remote Patient Monitoring",
+        "subtopic": "POLICY",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=863154&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Remote Patient Monitoring",
+        "subtopic": "POLICY",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=870777&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Remote Patient Monitoring",
+        "subtopic": "POLICY",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=877846&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Remote Patient Monitoring",
+        "subtopic": "CONDITIONS",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=870777&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Remote Patient Monitoring",
+        "subtopic": "CONDITIONS",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=877846&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Medicaid",
+        "topic": "Store and Forward",
+        "subtopic": "POLICY",
+        "outcome": "source_not_fetchable",
+        "note": "forbidden: https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=863154&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+      },
+      {
+        "category": "Professional Requirements",
+        "topic": "Licensure Compacts",
+        "subtopic": null,
+        "outcome": "source_not_fetched",
+        "note": "failed: https://psypact.org/mpage/psypactmap"
+      },
+      {
+        "category": "Professional Requirements",
+        "topic": "Licensure Compacts",
+        "subtopic": null,
+        "outcome": "no_source_line",
+        "note": "The entry has text but no SOURCE line."
+      }
+    ]
+  },
+  "rules": {
+    "total": 107,
+    "silent": 13,
+    "by_status": {
+      "draft": 107
+    },
+    "by_rule_type": {
+      "private_payer_parity": 18,
+      "consent": 2,
+      "medicaid_modality": 28,
+      "cross_state_licensure": 29,
+      "online_prescribing": 30
+    },
+    "quote_check": {
+      "checked": 94,
+      "passed": 94,
+      "pass_rate": 1.0
+    }
+  },
+  "answer_key": {
+    "lines": [
+      {
+        "section": "MEDICAID REIMBURSEMENT",
+        "question": "Live Video",
+        "rule_type": "medicaid_modality",
+        "cchp": "yes",
+        "ours": "yes",
+        "outcome": "agree",
+        "how": "yes: an allow rule for live_video. no: a deny rule for it."
+      },
+      {
+        "section": "MEDICAID REIMBURSEMENT",
+        "question": "Store-and-Forward",
+        "rule_type": "medicaid_modality",
+        "cchp": "yes",
+        "ours": "silent",
+        "outcome": "miss",
+        "how": "yes: an allow rule for store_and_forward. no: a deny rule for it."
+      },
+      {
+        "section": "MEDICAID REIMBURSEMENT",
+        "question": "Remote Patient Monitoring",
+        "rule_type": "medicaid_modality",
+        "cchp": "yes",
+        "ours": "yes",
+        "outcome": "agree",
+        "how": "yes: an allow rule for remote_patient_monitoring. no: a deny rule for it."
+      },
+      {
+        "section": "MEDICAID REIMBURSEMENT",
+        "question": "Audio Only",
+        "rule_type": "medicaid_modality",
+        "cchp": "no",
+        "ours": "no",
+        "outcome": "agree",
+        "how": "yes: an allow rule for audio_only. no: a deny rule for it."
+      },
+      {
+        "section": "PRIVATE PAYER LAW",
+        "question": "Law Exists",
+        "rule_type": "private_payer_parity",
+        "cchp": "yes",
+        "ours": "yes",
+        "outcome": "agree",
+        "how": "yes: any private payer rule that passed the quote check."
+      },
+      {
+        "section": "PRIVATE PAYER LAW",
+        "question": "Payment Parity",
+        "rule_type": "private_payer_parity",
+        "cchp": "no",
+        "ours": "silent",
+        "outcome": "agree_nothing_found",
+        "how": "yes: a rule that requires payment parity. no: a rule that rules it out."
+      },
+      {
+        "section": "PROFESSIONAL REQUIREMENTS",
+        "question": "Limited Licensure Exceptions",
+        "rule_type": "cross_state_licensure",
+        "cchp": "yes",
+        "ours": "yes",
+        "outcome": "agree",
+        "how": "yes: an allow rule with aspect licensure_exception."
+      },
+      {
+        "section": "PROFESSIONAL REQUIREMENTS",
+        "question": "Telehealth Specific License/Registration Process",
+        "rule_type": "cross_state_licensure",
+        "cchp": "yes",
+        "ours": "yes",
+        "outcome": "agree",
+        "how": "yes: an allow or require rule with aspect telehealth_registration."
+      },
+      {
+        "section": "PROFESSIONAL REQUIREMENTS",
+        "question": "Consent Requirements",
+        "rule_type": "consent",
+        "cchp": "no",
+        "ours": "silent",
+        "outcome": "agree_nothing_found",
+        "how": "yes: a rule that requires consent."
+      },
+      {
+        "section": "PROFESSIONAL REQUIREMENTS",
+        "question": "Licensure Compacts",
+        "rule_type": "cross_state_licensure",
+        "cchp": [
+          "ASLP",
+          "CC",
+          "IMLC",
+          "NLC",
+          "PSYPACT",
+          "PT"
+        ],
+        "ours": [
+          "CC"
+        ],
+        "outcome": "miss",
+        "how": "agree: our verified compact_membership rules name exactly CCHP's compacts."
+      }
+    ],
+    "counts": {
+      "agree": 6,
+      "agree_nothing_found": 2,
+      "miss": 2,
+      "wrong": 0
+    },
+    "matched": 8,
+    "total": 10,
+    "caveat": "One state and at most ten lines: too few for an interval. 'agree_nothing_found' means CCHP says No and we found no rule, which is agreement by absence. Online prescribing has no answer-key line and is covered by the labels only."
+  },
+  "labels": {
+    "sample_size": 30,
+    "labelled": 0,
+    "right": 0,
+    "wrong": 0,
+    "cannot_tell": 0,
+    "labellers": [],
+    "items": [],
+    "note": "Labels are written only by a person using the labelling page."
+  }
+}

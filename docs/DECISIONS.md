@@ -448,3 +448,12 @@ site is not rebuilt until M4, and labels would then pass through a public app).
 
 **Trade-off.** A second small web surface exists before the real API. It listens locally only
 and has no login.
+
+**Follow-up, 2026-11-27: the first run.** One extraction run over Florida: 24 model calls, none
+failed, 0.56 US dollars. It produced 107 rules: 94 with a quote, all 94 found word for word in
+the stored law, and 13 silent. The answer key matched on 8 of 10 lines with no wrong answer.
+The two misses are Medicaid store-and-forward (its only source is on a site that forbids
+fetching) and the list of licensure compacts (the compact sites' map pages hold little text).
+Several entries cite the same law, so the same rule appears more than once; the label sample
+now takes each distinct rule only once. Removing the repeats from the rule set itself is left
+for the rules engine in M3.

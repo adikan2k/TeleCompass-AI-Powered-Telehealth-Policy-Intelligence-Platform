@@ -1,6 +1,6 @@
 {
   "jurisdiction": "federal",
-  "generated_at": "2026-11-27T06:11:31.671132+00:00",
+  "generated_at": "2026-11-27T07:12:27.119811+00:00",
   "not_legal_advice": "Not legal advice. Sources last fetched 2026-11-27.",
   "run": {
     "id": 4,
@@ -195,6 +195,17 @@
       }
     ],
     "note": "A second model, different from the one that wrote the rules, checked each distinct rule against the stored law. This is an automated check, not a human review."
+  },
+  "human_approval": {
+    "distinct_rules": 14,
+    "approved": 14,
+    "approved_in_one_step": 14,
+    "rejected": 0,
+    "not_reviewed": 0,
+    "reviewers": [
+      "Aditya Kanbargi"
+    ],
+    "note": "Approvals are written only by a person using the rule review page."
   },
   "runs": [
     {

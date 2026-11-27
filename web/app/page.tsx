@@ -15,7 +15,7 @@ const STEPS = [
   },
   {
     title: "Review each rule",
-    text: "A second model checks each rule against the law. No person has reviewed the rules yet, and each rule says so.",
+    text: "A second model checks each rule against the law. Then a person approves or rejects it; only approved rules are used here, and each rule shows how it was checked.",
   },
   {
     title: "Decide with plain code",

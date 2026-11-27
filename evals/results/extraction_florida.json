@@ -1,6 +1,6 @@
 {
   "jurisdiction": "florida",
-  "generated_at": "2026-11-27T05:47:41.959612+00:00",
+  "generated_at": "2026-11-27T07:12:25.999855+00:00",
   "not_legal_advice": "Not legal advice. Sources last fetched 2026-11-27.",
   "run": {
     "id": 2,
@@ -619,6 +619,17 @@
       }
     ],
     "note": "A second model, different from the one that wrote the rules, checked each distinct rule against the stored law. This is an automated check, not a human review."
+  },
+  "human_approval": {
+    "distinct_rules": 39,
+    "approved": 39,
+    "approved_in_one_step": 39,
+    "rejected": 0,
+    "not_reviewed": 0,
+    "reviewers": [
+      "Aditya Kanbargi"
+    ],
+    "note": "Approvals are written only by a person using the rule review page."
   },
   "runs": [
     {

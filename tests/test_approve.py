@@ -166,6 +166,7 @@ def test_approvals_reach_the_results_file(conn: Connection) -> None:
 
     assert (approval["distinct_rules"], approval["approved"], approval["rejected"]) == (2, 1, 0)
     assert approval["not_reviewed"] == 1 and approval["reviewers"] == ["Aditya Kanbargi"]
+    assert approval["approved_in_one_step"] == 0
 
 
 def test_approving_the_rest_in_one_step_needs_the_box_ticked_and_says_so(
@@ -186,3 +187,4 @@ def test_approving_the_rest_in_one_step_needs_the_box_ticked_and_says_so(
     assert reviews[phone.id]["reviewer"] == "Aditya Kanbargi"
     assert reviews[video.id]["decision"] == "rejected"  # an earlier answer is left alone
     assert "1 approved, 1 rejected, 0 not reviewed." in client.get("/done").text
+    assert grade.build_results(conn, "florida", AT)["human_approval"]["approved_in_one_step"] == 1

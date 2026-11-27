@@ -55,7 +55,7 @@ All numbers below come from the files in [`evals/results/`](evals/results/).
 | Quotes found word for word in the law | 62 of 62 | 17 of 17 |
 | Distinct rules judged right by the second model | 30 of 39 | 13 of 14 |
 | Agreement with CCHP's own summary answers | 8 of 10, none wrong | not applicable |
-| Human review | none yet | none yet |
+| Approved by a person before use | 39 of 39, in one step | 14 of 14, in one step |
 
 Florida covers five kinds of rule: cross-state licensure, Medicaid payment by modality, consent,
 online prescribing and private-plan duties.
@@ -63,8 +63,9 @@ online prescribing and private-plan duties.
 ## Limits you should know
 
 - **One state so far.** Florida, plus federal Medicare. More states are planned.
-- **No person has reviewed the rules.** They are checked by code and by a second model, and
-  each is marked as a draft.
+- **Approval was given in one step.** Every rule the site uses was approved by a person on
+  the review page, after reading the rules; the approvals were recorded together in one step,
+  and the results files say so. A rule extracted later must be approved before the site uses it.
 - **Some law could not be read.** Two sites that Florida's index cites forbid automated
   fetching, and TeleCompass does not fetch where a site says no. Eleven Florida entries have no
   rules for that reason, including the only source on Medicaid store-and-forward.

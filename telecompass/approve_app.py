@@ -18,6 +18,7 @@ from telecompass import rule_store, scope, store
 from telecompass.db import Connection
 from telecompass.extract import normalise, select_passages
 from telecompass.fetch import utc_now
+from telecompass.grade import ONE_STEP_NOTE
 from telecompass.models import Rule
 from telecompass.review import distinct_quoted_rules
 
@@ -123,9 +124,6 @@ def create_app(conn: Connection, reviewer: str, now: Callable[[], datetime] = ut
         return RedirectResponse("/done", 303)
 
     return app
-
-
-ONE_STEP_NOTE = "Approved in one step from the summary page, after the reviewer read the rules."
 
 
 def _field(name: str, value: object) -> str:

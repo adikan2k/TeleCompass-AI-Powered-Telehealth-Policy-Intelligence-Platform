@@ -16,6 +16,8 @@ from telecompass.db import Connection
 from telecompass.models import GlanceAnswer, Rule
 from telecompass.review import distinct_quoted_rules
 
+ONE_STEP_NOTE = "Approved in one step from the summary page, after the reviewer read the rules."
+
 RESULTS_DIR = Path("evals") / "results"
 
 AGREE = "agree"
@@ -332,9 +334,15 @@ def approval_summary(conn: Connection, rules: list[Rule]) -> dict[str, Any]:
     distinct = distinct_quoted_rules(rules)
     human = rule_store.latest_rule_reviews(conn, [rule.id for rule in distinct])
     decisions = Counter(review["decision"] for review in human.values())
+    one_step = sum(
+        1
+        for review in human.values()
+        if review["decision"] == "approved" and review["note"] == ONE_STEP_NOTE
+    )
     return {
         "distinct_rules": len(distinct),
         "approved": decisions.get("approved", 0),
+        "approved_in_one_step": one_step,
         "rejected": decisions.get("rejected", 0),
         "not_reviewed": len(distinct) - len(human),
         "reviewers": sorted({review["reviewer"] for review in human.values()}),

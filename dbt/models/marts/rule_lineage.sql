@@ -12,7 +12,9 @@ select
     r.human_decision,
     r.reviewer,
     st.id as source_text_id,
-    st.url as source_url,
+    st.url as cited_url,                               -- the link the policy page gives
+    coalesce(st.final_url, st.fetch_url, st.url) as source_url,  -- the document actually read
+    (st.fetch_url is distinct from st.url) as read_from_official_copy,
     st.fetched_at as source_fetched_at,
     st.sha256 as source_sha256,
     e.entry_id,

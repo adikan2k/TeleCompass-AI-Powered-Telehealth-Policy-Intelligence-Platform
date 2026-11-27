@@ -34,7 +34,11 @@ def make_rules(
                     summary=f"Rule {number} of {rule_type}.",
                     status="draft" if verified else "unverified",
                     quote_verified=verified,
-                    quote=QUOTE if verified else "A quote that is not in the law at all.",
+                    quote=(
+                        f"{QUOTE} [{rule_type} {number}]"
+                        if verified
+                        else f"A quote that is not in the law at all. [{rule_type} {number}]"
+                    ),
                     quote_note=None if verified else "The quote was not found word for word.",
                     source_text_id=source.id,
                     source_url=CODE_59_1,
@@ -76,6 +80,18 @@ def test_sample_is_the_same_every_time_and_spread_over_rule_types(conn: Connecti
     counts = {name: sum(1 for i in first if by_id[i] == name) for name in set(by_id.values())}
     assert counts == {scope.CONSENT: 2, scope.ONLINE_PRESCRIBING: 12, scope.MEDICAID_MODALITY: 16}
     assert draw_sample(rules, seed=7) != first
+
+
+def test_a_rule_repeated_across_entries_is_sampled_only_once(conn: Connection) -> None:
+    _, rules = make_rules(conn, {scope.MEDICAID_MODALITY: 2})
+    original = rules[0]
+    repeat = original.model_copy(update={"id": original.id + 1000})
+    spaced = original.model_copy(update={"id": original.id + 2000, "quote": original.quote + "  "})
+    other_effect = original.model_copy(update={"id": original.id + 3000, "effect": "deny"})
+
+    sample = draw_sample([*rules, repeat, spaced, other_effect])
+
+    assert sorted(sample) == sorted([rules[0].id, rules[1].id, other_effect.id])
 
 
 def test_silent_rules_are_never_sampled_and_a_small_run_is_taken_whole(conn: Connection) -> None:

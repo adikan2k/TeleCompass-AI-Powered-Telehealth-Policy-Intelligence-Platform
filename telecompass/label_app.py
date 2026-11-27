@@ -30,11 +30,18 @@ VERDICTS = {"right": "Right", "wrong": "Wrong", "cannot_tell": "Cannot tell"}
 def draw_sample(rules: list[Rule], size: int = SAMPLE_SIZE, seed: int = SAMPLE_SEED) -> list[int]:
     """Pick rule ids to label: spread over the rule types, same result for the same seed.
 
-    Only rules that carry a quote are eligible; a silent rule has nothing to check.
+    Only rules that carry a quote are eligible; a silent rule has nothing to check. When
+    several entries cite the same law, the same rule comes out more than once; only the first
+    copy (same rule type, effect and quote) is eligible, so no label is spent on a repeat.
     """
     groups: dict[str, list[int]] = defaultdict(list)
-    for rule in rules:
-        if rule.effect != "silent" and rule.quote:
+    seen: set[tuple[str, str, str]] = set()
+    for rule in sorted(rules, key=lambda rule: rule.id):
+        if rule.effect == "silent" or not rule.quote:
+            continue
+        key = (rule.rule_type, rule.effect, " ".join(rule.quote.split()))
+        if key not in seen:
+            seen.add(key)
             groups[rule.rule_type].append(rule.id)
     rng = random.Random(seed)
     for ids in groups.values():

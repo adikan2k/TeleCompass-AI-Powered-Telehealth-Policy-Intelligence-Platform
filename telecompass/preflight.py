@@ -90,7 +90,9 @@ def describe(visit: Visit) -> str:
     if visit.prescription:
         drug = visit.prescription
         detail = f"Schedule {drug.schedule}" if drug.schedule else "not a controlled substance"
-        parts.append(f"prescription: {drug.drug} ({detail}{', renewal' if drug.renewal else ''})")
+        notes = [] if detail in drug.drug else [detail]
+        notes += ["renewal"] if drug.renewal else []
+        parts.append(f"prescription: {drug.drug}" + (f" ({', '.join(notes)})" if notes else ""))
     return "; ".join(parts) + f"; on {visit.visit_date}"
 
 

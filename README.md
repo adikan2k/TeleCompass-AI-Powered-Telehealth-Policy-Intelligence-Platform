@@ -1,209 +1,130 @@
-# TeleCompass 🧭
+# TeleCompass
 
-**AI-Powered Telehealth Policy Intelligence Platform**
+**A preflight check for telehealth visits.** Describe a visit, pick a date, and TeleCompass says
+line by line whether it is allowed and payable, with the exact words of the law behind each
+answer.
 
-TeleCompass is a comprehensive SaaS application that ingests state telehealth policy PDFs, extracts structured facts, and provides intelligent search, Q&A, comparison, and dashboard features for healthcare compliance professionals.
+It is built for mental-health telehealth companies that are expanding across states. Their
+recurring questions are: may this clinician treat a patient in that state, may the visit be by
+phone, will the payer pay, and may a controlled medicine be prescribed.
 
-## Snapshots
+> **Not legal advice.** TeleCompass is a research tool. It shows what the law it has read says,
+> and it says so when it holds no rule. Every answer carries the date its sources were fetched.
 
-**Landing Page:**
+## What it does today
 
-![alt text](image-7.png)
+- **Reads the law, not a summary.** For each state it follows the Center for Connected Health
+  Policy's index to the statutes, rules and manuals themselves, and reads those.
+- **Never invents a rule.** A model reads law into rules. Code then checks that each rule's
+  quote appears word for word in the stored law. A rule whose quote is not found is not used.
+- **Says "silent" when the law is silent.** Where it holds no rule, it says so and does not
+  guess.
+- **Decides with plain code.** A rules engine in ordinary Python applies the rules to a visit.
+  No model takes part in a decision, so the same visit always gets the same answer.
+- **Knows about dates.** Federal Medicare telehealth rules carry their start and end dates, so
+  the answer for a visit in 2026 differs from the same visit in 2028.
+- **Double-checks itself.** A second model reviews every rule against the law. Its verdicts are
+  reported as an automated check, never as a human one.
 
-**Search Module:**
+## An example
 
-![alt text](image-5.png)
+A psychiatrist licensed in New York, a patient in Florida, a phone call, Medicaid, a renewal of
+a stimulant:
 
-**QnA Module:**
-
-![alt text](image-4.png)
-
-![alt text](image-6.png)
-
-**Comparison Module:**
-
-![alt text](image-2.png)
-
-**Dashboard Module:**
-
-![alt text](image-8.png)
-
-
-## 🚀 Features
-
-### 1. **Policy Finder** (Hybrid Search)
-- Semantic search across all state telehealth policies
-- AI-powered relevance scoring
-- Snippet previews with page citations
-- Filter by state
-
-### 2. **RAG Q&A with Citations**
-- Ask natural language questions about telehealth policies
-- GPT-4 powered answers with confidence scores
-- Full source citations (document + page number)
-- Suggested follow-up questions for low-confidence responses
-
-### 3. **Policy Comparator**
-- Side-by-side comparison of up to 3 states
-- Compare across key categories:
-  - Modalities (Live video, Store-and-Forward, RPM, Audio-only)
-  - Consent requirements
-  - In-person visit rules
-
-## Developer Guide
-
-### 1. Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- Ollama installed locally
-- Pinecone account (free Starter plan works with Serverless GCP regions)
-
-### 2. Installation
-```bash
-git clone <repository>
-cd TeleCompass
-npm install
+```
+uv run python -m telecompass preflight --demo --date 2026-12-01
 ```
 
-### 3. Environment Setup
-```bash
-cp .env.example .env
+- **Cross-state licensure: not allowed.** No Florida licence or registration. The answer shows
+  the routes Florida law offers, such as its out-of-state telehealth registration.
+- **Medicaid payment: not allowed.** Florida Medicaid does not pay for telephone calls. Live
+  video would be paid.
+- **Consent: silent.** No Florida rule requiring it was found.
+- **Prescribing: allowed with conditions.** Schedule II medicines are barred by telehealth
+  unless an exception applies; treating a psychiatric disorder is one of the listed exceptions.
+- **Medicare, for reference.** No in-person visit is required in 2026. Run the same visit for
+  March 2028 and one is.
+
+## Coverage and results so far
+
+All numbers below come from the files in [`evals/results/`](evals/results/).
+
+| | Florida | Federal Medicare |
+|---|---|---|
+| Rules read from the law | 75 | 17 |
+| Quotes found word for word in the law | 62 of 62 | 17 of 17 |
+| Distinct rules judged right by the second model | 30 of 39 | 13 of 14 |
+| Agreement with CCHP's own summary answers | 8 of 10, none wrong | not applicable |
+| Human review | none yet | none yet |
+
+Florida covers five kinds of rule: cross-state licensure, Medicaid payment by modality, consent,
+online prescribing and private-plan duties.
+
+## Limits you should know
+
+- **One state so far.** Florida, plus federal Medicare. More states are planned.
+- **No person has reviewed the rules.** They are checked by code and by a second model, and
+  each is marked as a draft.
+- **Some law could not be read.** Two sites that Florida's index cites forbid automated
+  fetching, and TeleCompass does not fetch where a site says no. Eleven Florida entries have no
+  rules for that reason, including the only source on Medicaid store-and-forward.
+- **State rules rarely state a start date.** TeleCompass can say what the law as fetched says,
+  not what it said on an earlier date.
+
+## How it is built
+
+```
+CCHP state page ──> entries with their cited sources
+                         │
+        fetch the cited law (robots.txt obeyed, one request at a time)
+                         │
+        model reads law into rules ──> code checks every quote ──> second model reviews
+                         │
+        rules engine (plain Python) + a visit + a date ──> answer with quotes
 ```
 
-Edit `.env` with your configuration (see `.env.example` for all options):
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/telecompass"
-OLLAMA_HOST="http://localhost:11434"
-OLLAMA_EMBED_MODEL="nomic-embed-text:latest"
-OLLAMA_CHAT_MODEL="mistral:7b-instruct-q4_K_M"
-PINECONE_API_KEY="pcsk_your-key"
-PINECONE_INDEX_NAME="telecompass"
-PINECONE_CLOUD="gcp"           # or aws/azure depending on your plan
-PINECONE_REGION="us-central1"  # use a region supported by your Pinecone project
-ALLOW_INGEST="false"
-ALLOW_UPLOAD="false"
-NEXT_PUBLIC_ENABLE_UPLOAD="false"
+- **Python 3.11+**, FastAPI, PostgreSQL. The package is in [`telecompass/`](telecompass/).
+- **OpenAI models** read law into rules and review them. Every model call is counted in the
+  database, capped per run, and traced in Langfuse.
+- **Site**: Next.js and Tailwind in [`web/`](web/).
+- **Decisions** that shaped the project, with what was considered and why, are in
+  [`docs/DECISIONS.md`](docs/DECISIONS.md). The plan is in [`docs/PLAN.md`](docs/PLAN.md).
+
+## Run it yourself
+
+You need Python 3.11+, [uv](https://docs.astral.sh/uv/), Docker and Node 20+.
+
+```
+docker compose up -d --wait        # a local PostgreSQL, no password, this machine only
+cp .env.example .env               # then fill in the keys you have
+uv run --extra dev pytest          # the tests need Docker running
 ```
 
-### 4. Database Setup
-```bash
-npx prisma db push
-npx prisma generate
+The pipeline for a state, step by step:
+
+```
+uv run python -m telecompass fetch florida      # the CCHP page, once
+uv run python -m telecompass parse florida
+uv run python -m telecompass sources florida    # the law it cites, where sites allow
+uv run python -m telecompass extract florida    # needs OpenAI and Langfuse keys
+uv run python -m telecompass review florida
+uv run python -m telecompass grade florida      # writes evals/results/
+uv run python -m telecompass preflight --demo
 ```
 
-### 5. Ollama Setup
-```bash
-# Install Ollama from https://ollama.ai
-ollama serve  # Start Ollama server
+The API and the site, locally:
+
+```
+uv run uvicorn telecompass.api:production_app --factory --port 8000
+cd web && npm install && npm run dev            # http://localhost:3000
 ```
 
-### 6. Pinecone Setup
-```bash
-npm run pinecone:setup        # create the serverless index (defaults to gcp/us-central1)
-npm run pinecone:migrate      # optional legacy command if JSON embeddings still exist
-```
+## Credit
 
-The Pinecone index now stores all semantic vectors (previously JSON in PostgreSQL). Make sure the cloud/region you configure is supported by your Pinecone project.
+TeleCompass began as a telehealth policy search and question-answering app built by
+Sanjana K M and Aditya Kanbargi. This repository is a rebuild of that project by
+Aditya Kanbargi around a different idea: deciding one visit, with the law quoted. The original
+app is in the git history.
 
-### 7. Database Schema
-### Core Models
-- **State**: US states/territories
-- **Policy**: Uploaded policy documents
-- **PolicyChunk**: Text chunks with embeddings for RAG
-- **PolicyFact**: Extracted structured facts
-- **Comparison**: Saved comparisons
-- **QueryLog**: Analytics and usage tracking
-
-
-## 🎯 Usage Guide
-
-### 1. Ingest Policies
-- Toggle uploads on by setting `ALLOW_UPLOAD="true"`, `ALLOW_INGEST="true"`, and `NEXT_PUBLIC_ENABLE_UPLOAD="true"` in `.env`, then restart `npm run dev`.
-- Make sure `ollama serve` *and* the Pinecone index are reachable before you upload.
-- Open the Dashboard tab and use the "Upload Policy PDF" card to select a telehealth policy PDF.
-- After the success message, allow ~1 minute for background processing (embedding to Pinecone + fact extraction) before refreshing the dashboard.
-
-### 2. Search Policies
-- Navigate to "Search" tab
-- Enter a query (e.g., "consent requirements for live video")
-- View ranked results with snippets and citations
-
-### 3. Ask Questions
-- Navigate to "Q&A" tab
-- Ask natural language questions
-- Review AI-generated answers with confidence scores
-- Check citations for verification
-
-### 4. Compare States
-- Navigate to "Compare" tab
-- Select 2-3 states
-- Click "Compare Policies"
-- Review side-by-side comparison table
-
-### 5. View Dashboard
-- Navigate to "Dashboard" tab
-- Monitor coverage statistics
-- Identify compliance risks
-- Track processing status
-- Uploaded PDFs are saved under `storage/uploads/` (ignored by Git); rerun uploads anytime to refresh facts.
-
-## 🧪 Development
-
-### Run Prisma Studio (Database GUI)
-```bash
-npm run db:studio
-```
-
-### Build for Production
-```bash
-npm run build
-npm start
-```
-
-> **Hint:** After migrating from PostgreSQL embeddings, run `node scripts/reembed-pinecone.js` once to regenerate vectors in Pinecone before starting production.
-
-### Lint Code
-```bash
-npm run lint
-```
-
-### MVP 
-- [x] PDF ingestion pipeline
-- [x] Hybrid search with embeddings
-- [x] RAG Q&A with citations
-- [x] Multi-state comparison
-- [x] Dashboard visualizations
-
-### Future Enhancements
-- [ ] User authentication (NextAuth.js)
-- [ ] Saved searches and comparisons
-- [ ] Semantic diff for policy updates
-- [ ] Export to PDF/Excel
-- [ ] Advanced filtering and faceted search
-- [ ] API rate limiting and quotas
-- [ ] Multi-tenant support
-- [ ] Mobile responsive improvements
-- [ ] Real-time collaboration features
-
-### 🔄 Pinecone Maintenance Tips
-- `npm run pinecone:setup` — initialize or verify the Pinecone index.
-- `node scripts/reembed-pinecone.js` — regenerate embeddings for all policies (use after model changes or migrations).
-- `npm run pinecone:migrate` — legacy script to copy JSON embeddings if the old column still exists.
-- Check index stats:
-  ```bash
-  node -e "require('dotenv').config(); require('ts-node/register'); const { pineconeIndex } = require('./lib/pinecone'); (async () => console.log(await pineconeIndex.describeIndexStats()))();"
-  ```
-
-
-📝 License
-
-Proprietary – All Rights Reserved
-
-
-📧 Support
-
-For technical support or feature requests, please open an issue in the repository.
-
-Built for healthcare compliance professionals.
-
-Developed by Aditya and Sanjana, with special thanks to the Center for Connected Health Policy (CCHP) — https://www.cchpca.org/
+Policy index: the [Center for Connected Health Policy](https://www.cchpca.org/). TeleCompass
+uses CCHP's pages as a map to the law and does not republish them.

@@ -21,6 +21,7 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D13 | Rules engine in plain Python decides each line of a visit from quote-checked rules; federal Medicare rules come from the CMS Telehealth FAQ through the same pipeline | 2026-11-27 | Logged |
 | D14 | Audience: mental-health telehealth companies expanding across states. User testing moves to right after launch | 2026-11-27 | Chosen by Aditya, logged |
 | D15 | Live site: FastAPI on Cloud Run over the same engine, Next.js in `web/` on Vercel, share links, daily request caps in the database, no free text and no model on the public path | 2026-11-27 | Logged |
+| D16 | Site design: a preflight checklist on a chart table; one signal colour for what changes; the date tape as the signature move; Anime.js, three.js, React Bits and Playwright used, other resources studied | 2026-11-27 | Asked for by Aditya, logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -660,3 +661,77 @@ demo at once: patient data and cost.
   approve the rules himself or to launch with them marked as machine-checked drafts.
 - Accounts and keys are Aditya's: Neon for the database, Google Cloud for the API, Vercel for
   the site.
+
+## D16. The site's design
+
+**Direction.** A preflight checklist read off a chart table. Cool chart-paper ground (`#eef2f0`),
+near-black green ink, white sheets drawn with hairlines instead of shadows, and one signal colour,
+international orange, spent only on the heading being checked: the date pointer, the compass
+needle, the change points on the date tape, a changed line, and the focus ring. Verdict colours
+are a separate job, and each verdict also has its own glyph shape and word.
+
+**The one signature move.** The date tape. It is drawn as an instrument scale, month by month
+from January 2026 to December 2028, with orange marks at the real dates where a rule in the
+answer starts or ends (taken from the rules, never invented). Moving it turns a small three.js
+compass and re-runs the check; only the lines whose verdict changed move, and each says what it
+read before.
+
+**Rules adopted, and where they came from.**
+
+- One grotesque for every sentence (Schibsted Grotesk) and one mono only for dates, links and
+  codes (Fragment Mono). Not Inter or Geist, both named as overused. No tracked capitals, no
+  kicker labels above headings. [impeccable, taste-skill, genjutsu]
+- Verdict lines carry a leading glyph, a word and a tint; never a coloured stripe down one side.
+  Five glyph shapes that differ without colour: ring with tick, dashed ring with tick, octagon
+  with cross, dotted ring, dash. [impeccable, elayadesign, component.gallery badge guidance]
+- A ruled checklist in a framed sheet, with a dotted leader between each item and its verdict,
+  as on a printed preflight checklist. Small radii (2 to 4px) and one owned shape, a cut corner,
+  on verdict tags and the main button. [galleries: Spek, Factory, Rig; impeccable on cards]
+- Quoted law is reading text: 16px, line height 1.65, at most 68 characters a line, in a real
+  `figure`/`blockquote` with its source, fetch date and check trail in a definition list. The
+  law's own punctuation is kept exactly, em dashes included. [impeccable read mode, taste-skill,
+  component.gallery quote guidance, Jaytel]
+- Motion only where something changes: glyphs draw in on a first answer (240ms, first six lines,
+  eased stagger), changed lines settle from a 2px blur (200ms), disclosures open by measured
+  height (200ms open, 150ms close), presses scale to 0.97 (160ms). No scroll reveals, no loops,
+  no hover lifts. Reduced motion keeps opacity and colour and drops movement.
+  [emilkowalski/skills, impeccable operate mode, genjutsu]
+- The first screen is a worked answer for an invented visit, with one line already open to the
+  law, rather than a slogan. It is shown but not stored. [genjutsu "first screen", galleries]
+- The mandatory "not legal advice" and fetch date sit in a persistent ink strip at the top, like
+  an instrument panel. [galleries: Zirka]
+- Forms: visible labels, segmented choices where there are four or fewer, removable state tokens
+  with named remove buttons, a button that names its action ("Check this visit"). [taste-skill,
+  impeccable, component.gallery select guidance]
+
+**Resources used in code.**
+
+- Anime.js 4: the glyph drawing, the changed-line settle, and the compass needle, all inside a
+  scope that is reverted on unmount and checks reduced motion.
+- three.js: the compass, drawn in lines, loaded after the page in its own chunk, rendering only
+  when its heading changes, with a flat SVG drawing as the fallback.
+- React Bits: `Counter` (the year on the date readout) and `ClickSpark` (the copy-link button),
+  copied unchanged into `web/components/vendor/` with their licence notice.
+- Playwright: 11 end-to-end tests on a desktop and a phone browser, with the API mocked, an axe
+  accessibility scan with every quote open, reduced motion and forced colours.
+
+**Studied and not used, with the reason.**
+
+- Magic UI: its fitting pieces (number ticker, blur fade, text animate) need the `motion`
+  library (about 43 kB) and lack reduced-motion handling; its grid and dot patterns are named
+  as tells. React Bits and Anime.js cover the same needs.
+- OriginKit: a paid, account-gated catalogue of mostly WebGL showpieces; nothing it offers fits
+  better than what was used.
+- MotionSites: a paid library of prompts for AI site builders, not code. A prompt-made page
+  would contradict "its own look, tied to the subject".
+- ui-ux-pro-max: its defaults (Inter, mid-radius shadowed cards, a lavender mental-health
+  palette) reproduce the generic look; only its accessibility and form rows were applied.
+
+**Trade-offs.**
+
+- A light theme only. The usage scene is an office screen in daytime; a dark theme can follow.
+- The three.js compass costs an extra script chunk, loaded after the page and never on the
+  critical path; without WebGL the flat drawing stays.
+- The tape covers 2026 to 2028, the span of the dated rules held now. The exact-date field still
+  reaches any date the API accepts.
+- The worked example on the home page is not stored; every check a visitor runs is.

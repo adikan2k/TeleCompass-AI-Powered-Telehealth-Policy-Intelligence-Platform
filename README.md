@@ -86,7 +86,8 @@ CCHP state page ──> entries with their cited sources
 - **Python 3.11+**, FastAPI, PostgreSQL. The package is in [`telecompass/`](telecompass/).
 - **OpenAI models** read law into rules and review them. Every model call is counted in the
   database, capped per run, and traced in Langfuse.
-- **Site**: Next.js and Tailwind in [`web/`](web/).
+- **Site**: Next.js, Tailwind, Anime.js and a small three.js compass in [`web/`](web/), tested
+  end to end with Playwright.
 - **Decisions** that shaped the project, with what was considered and why, are in
   [`docs/DECISIONS.md`](docs/DECISIONS.md). The plan is in [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -117,6 +118,12 @@ The API and the site, locally:
 ```
 uv run uvicorn telecompass.api:production_app --factory --port 8000
 cd web && npm install && npm run dev            # http://localhost:3000
+```
+
+The site's end-to-end tests (desktop and phone, with an accessibility scan):
+
+```
+cd web && npx playwright install chromium && npm run e2e
 ```
 
 ## Credit

@@ -10,6 +10,7 @@ from typing import get_args
 
 from telecompass import (
     approve_app,
+    change_agent,
     config,
     copy_db,
     db,
@@ -31,11 +32,19 @@ from telecompass import (
     wayback,
 )
 
+# Which database the commands use: the name of the setting that holds its address.
+# DATABASE_URL by default; `--db NEON_DATABASE_URL` points every command at Neon instead.
+DB_SETTING = "DATABASE_URL"
+
+
+def _database_url() -> str:
+    config.load_env()
+    return config.database_url() if DB_SETTING == "DATABASE_URL" else config.require(DB_SETTING)
+
 
 def _open_database() -> db.Connection:
-    """Load .env, connect and bring the schema up to date."""
-    config.load_env()
-    conn = db.connect(config.database_url())
+    """Load .env, connect to the chosen database and bring the schema up to date."""
+    conn = db.connect(_database_url())
     db.migrate(conn)
     return conn
 
@@ -132,6 +141,44 @@ def cmd_diff(args: argparse.Namespace) -> int:
         place = " / ".join(p for p in (change.category, change.topic, change.subtopic) if p)
         what = f" ({', '.join(change.fields)})" if change.fields else ""
         print(f"  [{change.kind}] {place}{what}")
+    return 0
+
+
+def cmd_changes(args: argparse.Namespace) -> int:
+    """Run the change agent on a diff: propose rule changes, then pause for a person."""
+    from langgraph.checkpoint.postgres import PostgresSaver
+
+    url = _database_url()
+    with _open_database() as conn:
+        diff_id = args.diff
+        if diff_id is None:
+            row = conn.execute(
+                "SELECT max(id) AS id FROM diff_run WHERE jurisdiction = %s", (args.jurisdiction,)
+            ).fetchone()
+            diff_id = row["id"]
+        if diff_id is None:
+            print(f"No diff for {args.jurisdiction} yet. Run: diff {args.jurisdiction}")
+            return 1
+        client, tracer = llm.OpenAIClient(), llm.LangfuseTracer()
+
+        def gate(run_id: int) -> llm.ModelGate:
+            return llm.ModelGate(conn, client, tracer, run_id, change_agent.CHANGE_CAP_USD)
+
+        with PostgresSaver.from_conn_string(url) as saver, fetch.new_client() as http:
+            saver.setup()
+            graph = change_agent.build_graph(conn, saver, fetch.Fetcher(conn, http), gate)
+            try:
+                ids = change_agent.start(graph, diff_id)
+            finally:
+                tracer.flush()
+        rows = conn.execute(
+            "SELECT kind, count(*) AS n FROM change_proposal WHERE id = ANY(%s) GROUP BY kind",
+            (ids,),
+        ).fetchall()
+    print(f"Change agent on diff {diff_id}: {len(ids)} proposal(s), now waiting for review.")
+    for row in rows:
+        print(f"  {row['kind']}: {row['n']}")
+    print("Open the review page (python -m telecompass approve) and go to Changes.")
     return 0
 
 
@@ -301,7 +348,7 @@ def cmd_approve(args: argparse.Namespace) -> int:
     import uvicorn
 
     conn = _open_database()
-    app = approve_app.create_app(conn, args.reviewer)
+    app = approve_app.create_app(conn, args.reviewer, db_url=_database_url())
     print(f"Rule review page: http://127.0.0.1:{args.port}/   (Ctrl+C to stop)")
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
     return 0
@@ -375,6 +422,11 @@ def cmd_label(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="telecompass", description="Telehealth visit preflight.")
+    parser.add_argument(
+        "--db",
+        default="DATABASE_URL",
+        help="Name of the setting holding the database address, e.g. NEON_DATABASE_URL.",
+    )
     commands = parser.add_subparsers(dest="command", required=True)
 
     sources_cmd = commands.add_parser("sources", help="Fetch the law the entries cite.")
@@ -405,6 +457,11 @@ def build_parser() -> argparse.ArgumentParser:
     wb.add_argument("--since", default="2025")
     wb.add_argument("--until", default="2026")
     wb.set_defaults(run=cmd_wayback)
+
+    changes_cmd = commands.add_parser("changes", help="Propose rule changes from a diff.")
+    changes_cmd.add_argument("jurisdiction", type=str.lower)
+    changes_cmd.add_argument("--diff", type=int, help="Diff id. Default: the newest.")
+    changes_cmd.set_defaults(run=cmd_changes)
 
     diff_cmd = commands.add_parser("diff", help="What changed between two snapshots.")
     diff_cmd.add_argument("jurisdiction", type=str.lower)
@@ -475,6 +532,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
     args = build_parser().parse_args(argv)
+    global DB_SETTING
+    DB_SETTING = args.db
     try:
         return args.run(args)
     except config.MissingSetting as error:

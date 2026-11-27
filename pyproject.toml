@@ -49,8 +49,9 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["telecompass", "fakes", "test_preflight"]
+known-first-party = ["telecompass", "fakes", "test_preflight", "test_change_agent"]
 
 [tool.ruff.lint.per-file-ignores]
-# The local review page carries its stylesheet inline; CSS lines run a little long.
+# The local review pages build their HTML and CSS inline; those lines run a little long.
 "telecompass/approve_app.py" = ["E501"]
+"telecompass/change_pages.py" = ["E501"]

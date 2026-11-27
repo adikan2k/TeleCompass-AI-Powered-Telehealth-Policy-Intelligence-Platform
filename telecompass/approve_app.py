@@ -15,6 +15,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from telecompass import rule_store, scope, store
+from telecompass.change_pages import add_change_pages
 from telecompass.db import Connection
 from telecompass.extract import normalise, select_passages
 from telecompass.fetch import utc_now
@@ -60,8 +61,14 @@ def quote_in_place(source_text: str, quote: str) -> str:
     )
 
 
-def create_app(conn: Connection, reviewer: str, now: Callable[[], datetime] = utc_now) -> FastAPI:
+def create_app(
+    conn: Connection,
+    reviewer: str,
+    now: Callable[[], datetime] = utc_now,
+    db_url: str | None = None,
+) -> FastAPI:
     app = FastAPI(title="TeleCompass rule review", docs_url=None, redoc_url=None)
+    add_change_pages(app, conn, reviewer, now, db_url, _page, quote_in_place)
     items = rules_to_review(conn)
     ids = [rule.id for rule, _ in items]
 
@@ -271,6 +278,14 @@ def _page(title: str, body: str) -> str:
   body {{ margin:0; background:var(--paper); color:var(--ink);
          font:16px/1.55 "Segoe UI", system-ui, sans-serif; }}
   header {{ background:var(--ink); color:#fff; padding:10px 24px; font-size:14px; }}
+  header {{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 24px; }}
+  nav.top {{ display:flex; gap:18px; }} nav.top a {{ color:#fff; }}
+  section.change {{ background:var(--sheet); border:1px solid var(--rule); padding:4px 18px 14px;
+                    margin:18px 0; }}
+  .proposal {{ border-top:1px solid var(--rule); padding-top:8px; margin-top:12px; }}
+  .proposal h4 {{ margin:6px 0; font-size:15px; }}
+  .proposal.add h4 {{ color:var(--ok); }} .proposal.retire h4 {{ color:var(--stop); }}
+  .proposal.unreadable h4, .proposal.no_rules h4, .proposal.already_live h4 {{ color:var(--soft); }}
   main {{ max-width:56rem; margin:0 auto; padding:24px; }}
   h1 {{ font-size:15px; font-weight:600; margin:0; }}
   h2 {{ font-size:24px; line-height:1.25; font-weight:600; letter-spacing:-.015em; margin:.2em 0 .6em; }}
@@ -319,5 +334,5 @@ def _page(title: str, body: str) -> str:
   .state.not {{ color:var(--soft); }}
   @media (prefers-reduced-motion: reduce) {{ button {{ transition:none; }} }}
 </style></head>
-<body><header><h1>TeleCompass rule review. Local only. Not legal advice.</h1></header>
+<body><header><h1>TeleCompass rule review. Local only. Not legal advice.</h1><nav class="top"><a href="/done">Rules</a><a href="/changes">Changes</a><a href="/sources">Official copies</a></nav></header>
 <main>{body}</main></body></html>"""

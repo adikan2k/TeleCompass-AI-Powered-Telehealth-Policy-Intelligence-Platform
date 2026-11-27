@@ -240,3 +240,27 @@ def latest_reviews(conn: Connection, run_id: int) -> dict[int, dict[str, Any]]:
         (run_id,),
     ).fetchall()
     return {row["rule_id"]: row for row in rows}
+
+
+def save_rule_review(
+    conn: Connection, rule_id: int, decision: str, note: str | None, reviewer: str, at: datetime
+) -> None:
+    """Record a person's approval or rejection of a rule. Called only by the review page."""
+    conn.execute(
+        "INSERT INTO rule_review (rule_id, decision, note, reviewer, reviewed_at) "
+        "VALUES (%s, %s, %s, %s, %s)",
+        (rule_id, decision, note, reviewer, at),
+    )
+    conn.commit()
+
+
+def latest_rule_reviews(conn: Connection, rule_ids: list[int]) -> dict[int, dict[str, Any]]:
+    """The newest person's review of each of these rules, by rule id. Missing means unreviewed."""
+    if not rule_ids:
+        return {}
+    rows = conn.execute(
+        "SELECT DISTINCT ON (rule_id) rule_id, decision, note, reviewer, reviewed_at "
+        "FROM rule_review WHERE rule_id = ANY(%s) ORDER BY rule_id, id DESC",
+        (rule_ids,),
+    ).fetchall()
+    return {row["rule_id"]: row for row in rows}

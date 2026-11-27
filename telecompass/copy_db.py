@@ -21,6 +21,7 @@ TABLES = [
     "label_sample",
     "label",
     "auto_review",
+    "rule_review",
     "decision",
     "rate_counter",
 ]

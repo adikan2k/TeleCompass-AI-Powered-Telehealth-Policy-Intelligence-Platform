@@ -46,3 +46,9 @@ def langfuse_base_url() -> str:
         "LANGFUSE_BASE_URL is not set. Add it to .env, for example https://cloud.langfuse.com "
         "or https://us.cloud.langfuse.com, matching the region of your Langfuse project."
     )
+
+
+def require_approval() -> bool:
+    """True where only rules a person approved may be used (the live site, rule 13)."""
+    value = os.environ.get("TELECOMPASS_REQUIRE_APPROVAL", "").strip().lower()
+    return value in {"1", "true", "yes"}

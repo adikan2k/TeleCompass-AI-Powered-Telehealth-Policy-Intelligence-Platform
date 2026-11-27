@@ -22,6 +22,7 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D14 | Audience: mental-health telehealth companies expanding across states. User testing moves to right after launch | 2026-11-27 | Chosen by Aditya, logged |
 | D15 | Live site: FastAPI on Cloud Run over the same engine, Next.js in `web/` on Vercel, share links, daily request caps in the database, no free text and no model on the public path | 2026-11-27 | Logged |
 | D16 | Site design: a preflight checklist on a chart table; one signal colour for what changes; the date tape as the signature move; Anime.js, three.js, React Bits and Playwright used, other resources studied | 2026-11-27 | Asked for by Aditya, logged |
+| D17 | A person approves or rejects each rule on a local review page; the live site uses approved rules only; reviews are added rows, rules never change | 2026-11-27 | Chosen by Aditya, logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -34,8 +35,7 @@ Open items:
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
 - Four candidate official copies wait for a person to confirm them (D7).
-- All rules are still `draft`. A person must approve rules before the site goes live in M4
-  (rule 13).
+- Aditya reviews the 53 rules on the review page before launch (D17).
 
 ---
 
@@ -735,3 +735,32 @@ read before.
 - The tape covers 2026 to 2028, the span of the dated rules held now. The exact-date field still
   reaches any date the API accepts.
 - The worked example on the home page is not stored; every check a visitor runs is.
+
+## D17. A person approves each rule before it goes live
+
+**What.** `python -m telecompass approve` opens a local page that walks through every distinct
+rule with a quote, Florida's and the federal ones (53 today). Each page shows the rule in plain
+words and its details, the exact words of the law, those words highlighted in their place in
+the stored source with a link to it, and what the second model said. The person clicks Approve
+or Reject (keys A and R) and may add a note.
+
+- A review is its own added row in `rule_review`, with the reviewer's name and the time. The
+  rule itself is never changed (rule 12). A second review of the same rule replaces the first
+  in effect, and both stay on record.
+- A rejected rule is never used, anywhere.
+- With `TELECOMPASS_REQUIRE_APPROVAL=1`, set on the live API, only approved rules are used
+  (rule 13). Locally the setting is off, so development still works before review.
+- Approved rules show "Approved by a person" on the site; the results file gains a
+  `human_approval` count.
+- `copy-db --to-env NEON_DATABASE_URL` copies the local database to Neon by naming the setting
+  that holds Neon's address, so the address never appears on screen. It runs after the review,
+  so the approvals travel with the rules.
+
+**Why.** Aditya chose to approve the rules himself rather than launch drafts (2026-11-27). The
+check is careful reading, not legal expertise: does the sentence say what the quoted words say.
+
+**Considered.** Launching the rules as labelled drafts, which would have meant changing rule 13.
+Approving inside the public site, which would need logins for one reviewer.
+
+**Trade-off.** A rule extracted in a later run needs its own review before the live site uses
+it. That is the point of rule 13; M5's review queue builds on this table.

@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import get_args
 
 from telecompass import (
+    approve_app,
     config,
     copy_db,
     db,
@@ -157,14 +158,27 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
 
 def cmd_copy_db(args: argparse.Namespace) -> int:
-    """Copy every row from another TeleCompass database into the one DATABASE_URL names."""
-    with _open_database() as target, db.connect(args.from_url) as source:
-        try:
-            counts = copy_db.copy_all(source, target)
-        except copy_db.TargetNotEmpty as error:
-            print(f"Nothing copied: {error}", file=sys.stderr)
-            return 1
-    print(f"Copied {sum(counts.values()):,} rows into the database DATABASE_URL names:")
+    """Copy every row from the DATABASE_URL database into the one another setting names.
+
+    The target is given by the name of its setting (for example NEON_DATABASE_URL), so its
+    address never appears on the command line or in any output.
+    """
+    config.load_env()
+    target_url = config.require(args.to_env)
+    with db.connect(target_url) as target:
+        db.migrate(target)
+        if args.check:
+            counts = copy_db.row_counts(target)
+            print(f"Connected to the database {args.to_env} names. Schema is up to date.")
+            print(f"  rows already there: {sum(counts.values()):,}")
+            return 0
+        with _open_database() as source:
+            try:
+                counts = copy_db.copy_all(source, target)
+            except copy_db.TargetNotEmpty as error:
+                print(f"Nothing copied: {error}", file=sys.stderr)
+                return 1
+    print(f"Copied {sum(counts.values()):,} rows into the database {args.to_env} names:")
     for table, count in counts.items():
         print(f"  {table}: {count:,}")
     return 0
@@ -214,6 +228,17 @@ def cmd_preflight(args: argparse.Namespace) -> int:
         decision, decision_id, _ = preflight.run_preflight(conn, visit, fetch.utc_now())
         fetched = conn.execute("SELECT max(fetched_at) AS at FROM source_text").fetchone()["at"]
     print(preflight.render(decision, decision_id, f"{fetched:%Y-%m-%d}" if fetched else "never"))
+    return 0
+
+
+def cmd_approve(args: argparse.Namespace) -> int:
+    """Start the local page where a person approves or rejects each rule."""
+    import uvicorn
+
+    conn = _open_database()
+    app = approve_app.create_app(conn, args.reviewer)
+    print(f"Rule review page: http://127.0.0.1:{args.port}/   (Ctrl+C to stop)")
+    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
     return 0
 
 
@@ -302,8 +327,11 @@ def build_parser() -> argparse.ArgumentParser:
     extract_cmd.add_argument("--cap", default="5.00", help="Hard cost cap in US dollars.")
     extract_cmd.set_defaults(run=cmd_extract)
 
-    copy_cmd = commands.add_parser("copy-db", help="Copy another database into this one.")
-    copy_cmd.add_argument("--from-url", required=True, help="The database to copy from.")
+    copy_cmd = commands.add_parser("copy-db", help="Copy this database into another one.")
+    copy_cmd.add_argument(
+        "--to-env", required=True, help="Name of the setting that holds the target's address."
+    )
+    copy_cmd.add_argument("--check", action="store_true", help="Only connect and migrate.")
     copy_cmd.set_defaults(run=cmd_copy_db)
 
     pointers_cmd = commands.add_parser("pointers", help="Store our pointers to official pages.")
@@ -327,6 +355,11 @@ def build_parser() -> argparse.ArgumentParser:
     pre.add_argument("--schedule", choices=["II", "III", "IV", "V"], help="Controlled schedule.")
     pre.add_argument("--renewal", action="store_true")
     pre.set_defaults(run=cmd_preflight)
+
+    approve_cmd = commands.add_parser("approve", help="Approve or reject rules, by hand.")
+    approve_cmd.add_argument("--port", type=int, default=8766)
+    approve_cmd.add_argument("--reviewer", default="Aditya Kanbargi", help="Who is reviewing.")
+    approve_cmd.set_defaults(run=cmd_approve)
 
     review_cmd = commands.add_parser("review", help="Second-model check of each rule.")
     review_cmd.add_argument("jurisdiction", type=str.lower)

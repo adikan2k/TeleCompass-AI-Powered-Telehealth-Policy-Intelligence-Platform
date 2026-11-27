@@ -327,6 +327,21 @@ def run_headline(conn: Connection, run: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def approval_summary(conn: Connection, rules: list[Rule]) -> dict[str, Any]:
+    """How many distinct rules a person has approved or rejected (rule 13)."""
+    distinct = distinct_quoted_rules(rules)
+    human = rule_store.latest_rule_reviews(conn, [rule.id for rule in distinct])
+    decisions = Counter(review["decision"] for review in human.values())
+    return {
+        "distinct_rules": len(distinct),
+        "approved": decisions.get("approved", 0),
+        "rejected": decisions.get("rejected", 0),
+        "not_reviewed": len(distinct) - len(human),
+        "reviewers": sorted({review["reviewer"] for review in human.values()}),
+        "note": "Approvals are written only by a person using the rule review page.",
+    }
+
+
 def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[str, Any]:
     """Everything the results file holds, read from the database."""
     run = rule_store.latest_run(conn, jurisdiction)
@@ -375,6 +390,7 @@ def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[st
         },
         "labels": label_summary(conn, run["id"], rules),
         "automated_review": review_summary(conn, run["id"], rules),
+        "human_approval": approval_summary(conn, rules),
         "runs": [run_headline(conn, each) for each in rule_store.runs_for(conn, jurisdiction)],
     }
 

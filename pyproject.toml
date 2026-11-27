@@ -48,3 +48,7 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["telecompass", "fakes", "test_preflight"]
+
+[tool.ruff.lint.per-file-ignores]
+# The local review page carries its stylesheet inline; CSS lines run a little long.
+"telecompass/approve_app.py" = ["E501"]

@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from psycopg.types.json import Jsonb
 
-from telecompass import rule_store, scope
+from telecompass import config, rule_store, scope
 from telecompass.db import Connection
 from telecompass.engine import Decision, Evidence, Line, Prescription, Verdict, Visit, decide
 from telecompass.models import Rule
@@ -38,16 +38,29 @@ def demo_visit(on: date) -> Visit:
 
 
 def rules_for(conn: Connection, jurisdiction: str) -> list[Rule]:
-    """The distinct rules of a jurisdiction's newest extraction run. Empty if it has none."""
+    """The distinct rules of a jurisdiction's newest extraction run that may be used.
+
+    A rule a person rejected is never used. Where approval is required (the live site, rule 13),
+    only rules a person approved are used. Each rule carries the second model's verdict and,
+    once approved, the status "approved".
+    """
     run = rule_store.latest_run(conn, jurisdiction)
     if run is None:
         return []
-    reviews = rule_store.latest_reviews(conn, run["id"])
+    automated = rule_store.latest_reviews(conn, run["id"])
     rules = distinct_quoted_rules(rule_store.rules_for(conn, run["id"]))
-    return [
-        rule.model_copy(update={"auto_review": reviews.get(rule.id, {}).get("verdict")})
-        for rule in rules
-    ]
+    human = rule_store.latest_rule_reviews(conn, [rule.id for rule in rules])
+    only_approved = config.require_approval()
+    usable = []
+    for rule in rules:
+        decision = human.get(rule.id, {}).get("decision")
+        if decision == "rejected" or (only_approved and decision != "approved"):
+            continue
+        update = {"auto_review": automated.get(rule.id, {}).get("verdict")}
+        if decision == "approved":
+            update["status"] = "approved"
+        usable.append(rule.model_copy(update=update))
+    return usable
 
 
 def decide_visit(conn: Connection, visit: Visit) -> Decision:

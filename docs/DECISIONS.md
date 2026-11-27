@@ -503,3 +503,23 @@ objected that the rule left out a condition stated beside the quote, or was word
 than the source. Several of the 19 are rules about veterinary telehealth, which CCHP lists
 under online prescribing but which do not concern a human visit. Both points are inputs for
 the next extraction pass and for the rules engine in M3.
+
+**Follow-up, 2026-11-27: one improvement pass.** The extraction instructions were tightened
+(version v2): each rule must carry the conditions the source attaches to it, never be broader
+than the source, cover human care only, and take its modality from the source and not from the
+CCHP topic. Both runs are kept and listed side by side in the results file.
+
+| | Run 1 (v1) | Run 2 (v2) |
+|---|---|---|
+| Rules | 107 | 75 |
+| Distinct rules with a quote | 69 | 39 |
+| Quotes found word for word | 94 of 94 | 62 of 62 |
+| Automated review: judged right | 50 of 69 (72%) | 30 of 39 (77%) |
+| Automated review: flagged | 19 | 9 |
+| Answer key matched | 8 of 10, none wrong | 8 of 10, none wrong |
+| Cost in US dollars | 0.60 | 0.53 |
+
+The veterinary rules are gone and fewer rules drop a condition. The nine still flagged are
+mostly cases where the law states two requirements in one sentence and the rule covers one of
+them. No further pass was made: tuning the instructions until the reviewing model stops
+objecting would be fitting to the reviewer, not improving the rules.

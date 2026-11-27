@@ -780,6 +780,10 @@ it. That is the point of rule 13; M5's review queue builds on this table.
   dollars a month) before the link is shared widely.
 - Every command names the project explicitly; the machine's default Google Cloud project was
   left as it was.
+- New projects no longer let the default build account build. Per Google's documented fix, the
+  default compute account was given `roles/run.builder`.
+- Live at `https://telecompass-api-396394870423.us-east4.run.app`. Checked on 2026-11-27: health,
+  options and a preflight answered from Neon, every rule used was approved, unknown ids give 404.
 
 **Considered.** Keeping one instance warm from the start (the plan's wording); deferred to save
 cost until there are visitors. A region nearer Aditya; Virginia was chosen to sit beside Neon,

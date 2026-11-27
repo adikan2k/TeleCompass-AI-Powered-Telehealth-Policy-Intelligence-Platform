@@ -263,6 +263,25 @@ def test_a_cited_law_that_cannot_be_fetched_is_reported_not_guessed(
     assert model.calls == []
 
 
+def test_a_first_step_that_fails_can_be_run_again(
+    conn: Connection, saver: PostgresSaver, world: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def dropped(*args, **kwargs):
+        raise ConnectionError("the database closed the connection")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(change_agent, "_propose", dropped)
+        with pytest.raises(ConnectionError):
+            change_agent.start(agent(conn, saver, FakeModel(rpm_answer)), world["diff"])
+    graph = agent(conn, saver, FakeModel(rpm_answer))
+    assert change_agent.status(graph, world["diff"]) == "not started"
+
+    change_agent.start(graph, world["diff"])
+
+    assert change_agent.status(graph, world["diff"]) == "waiting for review"
+    assert sorted(p["kind"] for p in proposals(conn, world["diff"])) == ["add", "retire"]
+
+
 def test_a_diff_is_reviewed_once(conn: Connection, saver: PostgresSaver, world: dict) -> None:
     graph = agent(conn, saver, FakeModel(rpm_answer))
     change_agent.start(graph, world["diff"])

@@ -151,6 +151,10 @@ def cmd_changes(args: argparse.Namespace) -> int:
 
     url = _database_url()
     with _open_database() as conn:
+        # Each write commits itself; with autocommit no transaction sits open while the agent
+        # waits on a website or a model (Neon closes those after five minutes).
+        conn.commit()
+        conn.autocommit = True
         diff_id = args.diff
         if diff_id is None:
             row = conn.execute(

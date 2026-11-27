@@ -270,8 +270,8 @@ def build_graph(
 def status(graph, diff_run_id: int) -> str:
     """'not started', 'waiting for review' or 'done'."""
     snapshot = graph.get_state(_config(diff_run_id))
-    if not snapshot.values:
-        return "not started"
+    if not snapshot.values or snapshot.next == ("propose",):
+        return "not started"  # never run, or the first step failed and may be run again
     if snapshot.next:
         return "waiting for review"
     return "done"

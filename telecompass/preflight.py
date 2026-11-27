@@ -1,5 +1,6 @@
 """Run the engine for one visit: load the rules, decide, store the decision, print it (D13)."""
 
+import secrets
 from datetime import date, datetime
 
 from psycopg.types.json import Jsonb
@@ -41,27 +42,38 @@ def rules_for(conn: Connection, jurisdiction: str) -> list[Rule]:
     run = rule_store.latest_run(conn, jurisdiction)
     if run is None:
         return []
-    return distinct_quoted_rules(rule_store.rules_for(conn, run["id"]))
+    reviews = rule_store.latest_reviews(conn, run["id"])
+    rules = distinct_quoted_rules(rule_store.rules_for(conn, run["id"]))
+    return [
+        rule.model_copy(update={"auto_review": reviews.get(rule.id, {}).get("verdict")})
+        for rule in rules
+    ]
 
 
-def run_preflight(conn: Connection, visit: Visit, now: datetime) -> tuple[Decision, int]:
-    """Decide a visit from the stored rules and store the decision. Returns it with its id."""
+def run_preflight(conn: Connection, visit: Visit, now: datetime) -> tuple[Decision, int, str]:
+    """Decide a visit from the stored rules and store the decision.
+
+    Returns the decision, its row id and its public id. The public id is random, so a share
+    link cannot be guessed from another one.
+    """
     jurisdiction = scope.STATE_JURISDICTIONS.get(visit.patient_state.upper())
     state_rules = rules_for(conn, jurisdiction) if jurisdiction else []
     decision = decide(visit, state_rules, rules_for(conn, scope.FEDERAL))
+    public_id = secrets.token_urlsafe(9)
     row = conn.execute(
-        "INSERT INTO decision (visit, visit_date, answer, rule_ids, created_at) "
-        "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+        "INSERT INTO decision (visit, visit_date, answer, rule_ids, created_at, public_id) "
+        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
         (
             Jsonb(visit.model_dump(mode="json")),
             visit.visit_date,
             Jsonb([line.model_dump(mode="json") for line in decision.lines]),
             decision.rule_ids,
             now,
+            public_id,
         ),
     ).fetchone()
     conn.commit()
-    return decision, row["id"]
+    return decision, row["id"], public_id
 
 
 def describe(visit: Visit) -> str:

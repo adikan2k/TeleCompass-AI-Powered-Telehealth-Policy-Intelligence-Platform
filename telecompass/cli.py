@@ -196,7 +196,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
         print(f"That visit is not valid: {error}", file=sys.stderr)
         return 1
     with _open_database() as conn:
-        decision, decision_id = preflight.run_preflight(conn, visit, fetch.utc_now())
+        decision, decision_id, _ = preflight.run_preflight(conn, visit, fetch.utc_now())
         fetched = conn.execute("SELECT max(fetched_at) AS at FROM source_text").fetchone()["at"]
     print(preflight.render(decision, decision_id, f"{fetched:%Y-%m-%d}" if fetched else "never"))
     return 0

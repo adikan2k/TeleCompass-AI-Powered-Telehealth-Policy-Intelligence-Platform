@@ -11,7 +11,7 @@ M2_TABLES = {
     "label",
     "auto_review",
 }
-M3_TABLES = {"decision"}
+M3_TABLES = {"decision", "rate_counter"}
 
 
 def test_migrate_creates_every_table(conn: Connection) -> None:

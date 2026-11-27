@@ -60,6 +60,7 @@ class Evidence(BaseModel):
     conditions: list[str]
     effective_from: date | None
     effective_to: date | None
+    auto_review: str | None = None
 
 
 class Line(BaseModel):
@@ -156,6 +157,7 @@ def evidence(rule: Rule) -> Evidence:
         conditions=rule.conditions,
         effective_from=rule.effective_from,
         effective_to=rule.effective_to,
+        auto_review=rule.auto_review,
     )
 
 

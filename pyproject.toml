@@ -47,4 +47,4 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["telecompass", "fakes"]
+known-first-party = ["telecompass", "fakes", "test_preflight"]

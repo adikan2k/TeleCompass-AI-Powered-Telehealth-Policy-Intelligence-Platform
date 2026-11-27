@@ -115,7 +115,7 @@ def seed_rules(conn: Connection) -> tuple[int, int]:
 def test_decision_is_stored_with_the_visit_and_the_rules_it_rests_on(conn: Connection) -> None:
     no_phone, audio = seed_rules(conn)
 
-    decision, decision_id = preflight.run_preflight(
+    decision, decision_id, _ = preflight.run_preflight(
         conn, preflight.demo_visit(date(2026, 12, 1)), AT
     )
 
@@ -135,7 +135,7 @@ def test_printout_gives_verdicts_in_words_with_the_law_and_the_disclaimers(
     conn: Connection,
 ) -> None:
     no_phone, _ = seed_rules(conn)
-    decision, decision_id = preflight.run_preflight(
+    decision, decision_id, _ = preflight.run_preflight(
         conn, preflight.demo_visit(date(2026, 12, 1)), AT
     )
 
@@ -171,7 +171,7 @@ def test_state_we_do_not_hold_gives_silent_lines_not_another_states_rules(
     seed_rules(conn)
     visit = preflight.demo_visit(date(2026, 12, 1)).model_copy(update={"patient_state": "TX"})
 
-    decision, _ = preflight.run_preflight(conn, visit, AT)
+    decision, _, _ = preflight.run_preflight(conn, visit, AT)
 
     state_lines = [line for line in decision.lines if not line.key.startswith("medicare_")]
     assert {line.verdict for line in state_lines} <= {Verdict.SILENT, Verdict.NOT_APPLICABLE}

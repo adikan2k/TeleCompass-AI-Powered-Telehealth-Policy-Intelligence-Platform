@@ -135,3 +135,4 @@ class Rule(BaseModel):
     approved_by: str | None = None
     approved_at: datetime | None = None
     created_at: datetime
+    auto_review: str | None = None  # the second model's verdict, when it is loaded

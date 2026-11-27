@@ -1,15 +1,58 @@
-# Official copies of documents whose cited link we may not fetch (D7).
+# Official copies of documents whose cited link we may not fetch, or could not reach (D7).
 #
 # CCHP cites some Florida documents through sites whose robots.txt forbids fetching. Where the
-# same document is published on an official site that allows it, it can be listed here.
+# same document is published on an official site, it is listed here as a PROPOSAL.
 #
 # An entry is IGNORED until a person has opened both links, seen that they are the same
 # document, and filled in `confirmed_by` and `confirmed_on`. Nothing else may fill them in.
+# The candidates below were found by a web search on 2026-11-26. None is confirmed.
 #
-# [[override]]
-# cited_url    = "the link exactly as CCHP cites it"
-# official_url = "the same document on an official site"
-# document     = "title and date of the document"
-# found_on     = "date the official copy was found"
-# confirmed_by = ""
-# confirmed_on = ""
+# Searched for and NOT found on any official site (the agency's own archive links these three
+# alerts to the same email-archive service, so there may be no official copy):
+#   - Florida Medicaid alert, "Ending of Federal Public Health Emergency: Updated Co-Payment and
+#     Telemedicine Guidance for Medical and Behavioral Health Providers", May 4, 2023
+#   - Florida Medicaid alert, "Community Behavioral Health Telemedicine-Eligible Services",
+#     May 12, 2023
+#   - Florida Medicaid alert, "Florida Medicaid Reimbursement for Acute Hospital Care at Home
+#     Program", November 14, 2024
+
+# Check: this is the enrolled bill, 549 pages. The cited passage is printed page 498 (page 499
+# of the PDF). The same act as a Laws of Florida chapter: https://laws.flrules.org/2025/198
+[[override]]
+cited_url = "https://track.govhawk.com/public/bills/2188802"
+official_url = "https://www.flsenate.gov/Session/Bill/2025/2500/BillText/er/PDF"
+document = "SB 2500 (2025 Session), General Appropriations Act, p. 498"
+found_on = "2026-11-26"
+confirmed_by = ""
+confirmed_on = ""
+
+# Check: CCHP cites "FL Statutes Sec. 486.112 - HB 1299 (2025 Session)" but links to the bill.
+# This is the statute as amended by that bill, not the bill. The enrolled bill itself:
+# https://www.flsenate.gov/Session/Bill/2025/1299/BillText/er/PDF (section 16, from page 43).
+[[override]]
+cited_url = "https://track.govhawk.com/public/bills/2157705"
+official_url = "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0400-0499/0486/Sections/0486.112.html"
+document = "Florida Statutes s. 486.112, Physical Therapy Licensure Compact (amended by HB 1299, 2025)"
+found_on = "2026-11-26"
+confirmed_by = ""
+confirmed_on = ""
+
+# Check carefully: this is the agency's press release with the same headline, dated May 19,
+# 2026. The alert CCHP cites is dated May 21, 2026. The two texts were not compared.
+[[override]]
+cited_url = "https://www.icontact-archive.com/archive?c=227375&f=11179&s=13873&m=877846&t=850d8a08f66cb5c2e1e49656573dbe0caeb447b39b9d192096e732cbe37425f5"
+official_url = "https://ahca.myflorida.com/file/press_releases/5.19.26_From_the_Start_Roundtable.pdf"
+document = "AHCA, 'Continues to Promote the From the Start Initiative with State and Local Partners', May 2026"
+found_on = "2026-11-26"
+confirmed_by = ""
+confirmed_on = ""
+
+# Check: PSYPACT's site moved from psypact.org to psypact.gov. The new page was seen in search
+# results only, and the site answered 403 to an automated request, so the fetch may fail.
+[[override]]
+cited_url = "https://psypact.org/mpage/psypactmap"
+official_url = "https://psypact.gov/page/psypactmap"
+document = "PSYPACT map of participating states"
+found_on = "2026-11-26"
+confirmed_by = ""
+confirmed_on = ""

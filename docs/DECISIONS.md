@@ -286,6 +286,24 @@ and the requests are in `fetch_log`.
 **Trade-off.** Florida's Medicaid numbers will be weaker than they could be, and the results
 say why. That is preferred over fetching where a site says not to.
 
+**Follow-up, 2026-11-26: official copies.** Aditya asked for official copies of the blocked
+documents to be looked for. A web search found candidates for four of the seven, listed in
+`telecompass/data/source_overrides.toml`. A candidate is ignored by the code until a person
+has compared the two documents and written their name against it.
+
+| Cited document | Official copy found |
+|---|---|
+| Budget bill SB 2500 (2025), p. 498 | Yes: the enrolled bill on the Florida Senate site |
+| HB 1299 (2025) with statute s. 486.112 | Yes: the statute on the Florida Statutes site |
+| Medicaid alert of May 21, 2026 | Likely: the agency's press release with the same headline, dated two days earlier. The texts were not compared |
+| PSYPACT map | The page moved to `psypact.gov`. Seen in search results only |
+| Medicaid alert of May 4, 2023 | No |
+| Medicaid alert of May 12, 2023 | No |
+| Medicaid alert of November 14, 2024 | No |
+
+The agency's own archive links those three alerts to the email-archive site that forbids
+fetching, so there may be no official copy of them at all.
+
 ## D8. Rules and extraction
 
 **What.** A `rule` table as in the plan, plus the lineage that makes a rule traceable:
@@ -358,7 +376,9 @@ for the Responses API, so calls are traced explicitly instead. LiteLLM or LangCh
 wrapper: more layers than one provider needs.
 
 **Trade-off.** No extraction can run until Aditya has created a Langfuse project and set the
-keys. That is a deliberate stop, not a soft warning.
+keys. That is a deliberate stop, not a soft warning. A trace holds the whole prompt, so the
+CCHP entry text and the law text are also sent to Langfuse, as they are to OpenAI. Requests to
+OpenAI are made with `store=False`.
 
 ## D10. The grade
 

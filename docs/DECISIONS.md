@@ -132,6 +132,11 @@ Two small tables were added while building, after approval, and are flagged to A
   point at the parse run that made them, so a fixed parser adds a new run and never rewrites
   old rows. `show` reads the newest run.
 
+Reading the real page also showed three things the first schema missed, added in migration
+`002`: a topic can have sub-headings (`entry.subtopic`), one SOURCE line can link to several
+documents (`entry.source_links`, with `source_url` holding the first), and the "At a Glance"
+panel is split into named groups (`glance_answer.section`).
+
 The local database has no password. It listens on `127.0.0.1` only, so there is no secret to
 keep or to leak.
 

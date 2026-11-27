@@ -13,6 +13,8 @@ class FetchedPage(BaseModel):
     fetched_at: datetime
     sha256: str
     body: str
+    content: bytes = b""
+    content_type: str = ""
 
 
 class Snapshot(BaseModel):
@@ -79,3 +81,56 @@ class ParseRun(BaseModel):
     entry_count: int
     answer_count: int
     problems: list[str]
+
+
+class StoredEntry(Entry):
+    """An entry as read back from the database, with its row id."""
+
+    id: int
+
+
+class SourceText(BaseModel):
+    """One attempt to get a cited document. `text` is what quotes are checked against."""
+
+    id: int
+    url: str
+    fetch_url: str
+    final_url: str | None = None
+    fetched_at: datetime
+    outcome: str
+    http_status: int | None = None
+    content_type: str | None = None
+    sha256: str | None = None
+    text: str | None = None
+    note: str | None = None
+
+
+class Rule(BaseModel):
+    """One rule row. `status` and `quote_verified` are always set by code, never by a model."""
+
+    id: int
+    extraction_run_id: int
+    entry_id: int
+    jurisdiction: str
+    rule_type: str
+    aspect: str
+    effect: str
+    profession: str | None = None
+    payer: str | None = None
+    modality: str | None = None
+    service: str | None = None
+    compact: str | None = None
+    conditions: list[str] = []
+    summary: str
+    quote: str | None = None
+    quote_verified: bool
+    quote_note: str | None = None
+    source_text_id: int | None = None
+    source_url: str | None = None
+    source_fetched_at: datetime | None = None
+    effective_from: date | None = None
+    effective_to: date | None = None
+    status: str
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    created_at: datetime

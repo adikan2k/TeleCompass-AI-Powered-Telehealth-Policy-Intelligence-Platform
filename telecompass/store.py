@@ -5,7 +5,16 @@ from datetime import datetime
 from psycopg.types.json import Jsonb
 
 from telecompass.db import Connection
-from telecompass.models import Entry, FetchedPage, GlanceAnswer, ParsedPage, ParseRun, Snapshot
+from telecompass.models import (
+    Entry,
+    FetchedPage,
+    GlanceAnswer,
+    ParsedPage,
+    ParseRun,
+    Snapshot,
+    SourceText,
+    StoredEntry,
+)
 
 
 def log_request(conn: Connection, host: str, url: str, at: datetime, status: int | None) -> None:
@@ -137,3 +146,70 @@ def answers_for(conn: Connection, parse_run_id: int) -> list[GlanceAnswer]:
         "SELECT * FROM glance_answer WHERE parse_run_id = %s ORDER BY position", (parse_run_id,)
     ).fetchall()
     return [GlanceAnswer.model_validate(row) for row in rows]
+
+
+def stored_entries_for(conn: Connection, parse_run_id: int) -> list[StoredEntry]:
+    """The entries of one parser pass with their row ids, in page order."""
+    rows = conn.execute(
+        "SELECT * FROM entry WHERE parse_run_id = %s ORDER BY position", (parse_run_id,)
+    ).fetchall()
+    return [StoredEntry.model_validate(row) for row in rows]
+
+
+def save_source_text(
+    conn: Connection,
+    *,
+    url: str,
+    fetch_url: str,
+    fetched_at: datetime,
+    outcome: str,
+    final_url: str | None = None,
+    http_status: int | None = None,
+    content_type: str | None = None,
+    sha256: str | None = None,
+    raw_body: bytes | None = None,
+    text: str | None = None,
+    note: str | None = None,
+) -> SourceText:
+    """Record one attempt to get a cited document."""
+    row = conn.execute(
+        "INSERT INTO source_text (url, fetch_url, final_url, fetched_at, outcome, http_status, "
+        "content_type, sha256, raw_body, text, note) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+        "RETURNING id, url, fetch_url, final_url, fetched_at, outcome, http_status, content_type, "
+        "sha256, text, note",
+        (
+            url,
+            fetch_url,
+            final_url,
+            fetched_at,
+            outcome,
+            http_status,
+            content_type,
+            sha256,
+            raw_body,
+            text,
+            note,
+        ),
+    ).fetchone()
+    conn.commit()
+    return SourceText.model_validate(row)
+
+
+def latest_source_text(conn: Connection, url: str) -> SourceText | None:
+    """The newest attempt for a cited link, or None if it was never tried."""
+    row = conn.execute(
+        "SELECT id, url, fetch_url, final_url, fetched_at, outcome, http_status, content_type, "
+        "sha256, text, note FROM source_text WHERE url = %s ORDER BY id DESC LIMIT 1",
+        (url,),
+    ).fetchone()
+    return SourceText.model_validate(row) if row else None
+
+
+def source_text_by_id(conn: Connection, source_text_id: int) -> SourceText | None:
+    row = conn.execute(
+        "SELECT id, url, fetch_url, final_url, fetched_at, outcome, http_status, content_type, "
+        "sha256, text, note FROM source_text WHERE id = %s",
+        (source_text_id,),
+    ).fetchone()
+    return SourceText.model_validate(row) if row else None

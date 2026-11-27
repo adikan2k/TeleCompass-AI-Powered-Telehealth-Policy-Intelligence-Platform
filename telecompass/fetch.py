@@ -33,6 +33,10 @@ class FetchRefused(RuntimeError):
     """We must not, or could not safely, fetch this. Stop and tell Aditya."""
 
 
+class RobotsForbid(FetchRefused):
+    """The site's robots.txt says no. Never worked around."""
+
+
 class AlreadyFetched(RuntimeError):
     """A snapshot of this page is already stored."""
 
@@ -62,13 +66,16 @@ class Fetcher:
         self.wait_seconds = wait_seconds
         self.sleep = sleep
         self.now = now
+        self.host_wait: dict[str, float] = {}  # a site's own crawl delay, when longer than ours
+        self._robots: dict[str, RobotFileParser | None] = {}  # read once per site per run
 
     def _wait_for(self, host: str) -> None:
-        """Sleep until wait_seconds have passed since our last request to this host."""
+        """Sleep until the wait has passed since our last request to this host."""
         last = store.last_request_at(self.conn, host)
         if last is None:
             return
-        remaining = self.wait_seconds - (self.now() - last).total_seconds()
+        wait = self.host_wait.get(host, self.wait_seconds)
+        remaining = wait - (self.now() - last).total_seconds()
         if remaining > 0:
             self.sleep(remaining)
 
@@ -97,24 +104,34 @@ class Fetcher:
             raise FetchRefused(f"Too many redirects, last one at {url}")
         return response
 
-    def check_robots(self, url: str) -> None:
-        """Read the site's robots.txt and raise FetchRefused unless it lets us fetch url."""
+    def _robots_rules(self, url: str) -> RobotFileParser | None:
+        """The site's robots.txt rules, read once per run. None means it has no robots.txt."""
         parts = urlsplit(url)
-        robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
+        site = f"{parts.scheme}://{parts.netloc}"
+        if site in self._robots:
+            return self._robots[site]
+        robots_url = f"{site}/robots.txt"
         response = self.get(robots_url)
         if response.status_code in (404, 410):
-            return  # No robots.txt: no crawl rules are stated (RFC 9309).
-        if response.status_code != 200:
+            rules = None  # No robots.txt: no crawl rules are stated (RFC 9309).
+        elif response.status_code != 200:
             raise FetchRefused(
                 f"{robots_url} answered {response.status_code}. Not fetching until it is looked at."
             )
-        rules = RobotFileParser()
-        rules.parse(response.text.splitlines())
-        if not rules.can_fetch(AGENT_NAME, url):
-            raise FetchRefused(f"{robots_url} forbids fetching {url}")
-        delay = rules.crawl_delay(AGENT_NAME)
-        if delay is not None:
-            self.wait_seconds = max(self.wait_seconds, float(delay))
+        else:
+            rules = RobotFileParser()
+            rules.parse(response.text.splitlines())
+            delay = rules.crawl_delay(AGENT_NAME)
+            if delay is not None:
+                self.host_wait[parts.netloc] = max(self.wait_seconds, float(delay))
+        self._robots[site] = rules
+        return rules
+
+    def check_robots(self, url: str) -> None:
+        """Raise RobotsForbid unless the site's robots.txt lets us fetch url."""
+        rules = self._robots_rules(url)
+        if rules is not None and not rules.can_fetch(AGENT_NAME, url):
+            raise RobotsForbid(f"robots.txt forbids fetching {url}")
 
     def fetch(self, url: str) -> FetchedPage:
         """Fetch one page. Anything other than 200 is refused, so no error page is stored."""
@@ -128,6 +145,8 @@ class Fetcher:
             fetched_at=fetched_at,
             sha256=hashlib.sha256(response.content).hexdigest(),
             body=response.text,
+            content=response.content,
+            content_type=response.headers.get("content-type", "").split(";")[0].strip().lower(),
         )
 
 

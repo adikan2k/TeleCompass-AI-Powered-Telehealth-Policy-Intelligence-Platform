@@ -1,0 +1,15 @@
+# Official copies of documents whose cited link we may not fetch (D7).
+#
+# CCHP cites some Florida documents through sites whose robots.txt forbids fetching. Where the
+# same document is published on an official site that allows it, it can be listed here.
+#
+# An entry is IGNORED until a person has opened both links, seen that they are the same
+# document, and filled in `confirmed_by` and `confirmed_on`. Nothing else may fill them in.
+#
+# [[override]]
+# cited_url    = "the link exactly as CCHP cites it"
+# official_url = "the same document on an official site"
+# document     = "title and date of the document"
+# found_on     = "date the official copy was found"
+# confirmed_by = ""
+# confirmed_on = ""

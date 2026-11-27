@@ -166,3 +166,23 @@ def test_approvals_reach_the_results_file(conn: Connection) -> None:
 
     assert (approval["distinct_rules"], approval["approved"], approval["rejected"]) == (2, 1, 0)
     assert approval["not_reviewed"] == 1 and approval["reviewers"] == ["Aditya Kanbargi"]
+
+
+def test_approving_the_rest_in_one_step_needs_the_box_ticked_and_says_so(
+    conn: Connection,
+) -> None:
+    _, (phone, video) = seed(conn)
+    client = client_for(conn)
+    client.post("/rule/1", content="decision=rejected&note=Too+broad")
+
+    client.post("/approve-remaining", content="")
+    assert phone.id not in rule_store.latest_rule_reviews(conn, [phone.id])
+
+    client.post("/approve-remaining", content="confirm=yes")
+
+    reviews = rule_store.latest_rule_reviews(conn, [phone.id, video.id])
+    assert reviews[phone.id]["decision"] == "approved"
+    assert reviews[phone.id]["note"].startswith("Approved in one step")
+    assert reviews[phone.id]["reviewer"] == "Aditya Kanbargi"
+    assert reviews[video.id]["decision"] == "rejected"  # an earlier answer is left alone
+    assert "1 approved, 1 rejected, 0 not reviewed." in client.get("/done").text

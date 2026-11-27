@@ -104,7 +104,28 @@ def create_app(conn: Connection, reviewer: str, now: Callable[[], datetime] = ut
     def done() -> HTMLResponse:
         return HTMLResponse(_page("Review", _summary_html(items, reviews())))
 
+    @app.post("/approve-remaining")
+    async def approve_remaining(request: Request) -> RedirectResponse:
+        """The reviewer approves every rule not yet reviewed, in one step, by their own click.
+
+        It needs the confirmation box ticked, and each review it writes says it was given in
+        one step, so the record shows how the approval was made.
+        """
+        form = parse_qs((await request.body()).decode("utf-8"))
+        if form.get("confirm", [""])[0] != "yes":
+            return RedirectResponse("/done", 303)
+        done = reviews()
+        for rule_id in ids:
+            if rule_id not in done:
+                rule_store.save_rule_review(
+                    conn, rule_id, "approved", ONE_STEP_NOTE, reviewer, now()
+                )
+        return RedirectResponse("/done", 303)
+
     return app
+
+
+ONE_STEP_NOTE = "Approved in one step from the summary page, after the reviewer read the rules."
 
 
 def _field(name: str, value: object) -> str:
@@ -221,12 +242,18 @@ def _summary_html(items: list[tuple[Rule, dict | None]], reviews: dict[int, dict
             f"<li><a href='/rule/{position}'>{escape(rule.summary)}</a> "
             f"<span class='state {state.split()[0].lower()}'>{state}</span></li>"
         )
-    finish = (
-        "<p><b>All rules are reviewed.</b> Stop this page with Ctrl+C in the terminal and tell "
-        "Claude it is done.</p>"
-        if left == 0
-        else f"<p>{left} still to review. <a href='/'>Continue</a></p>"
-    )
+    if left == 0:
+        finish = "<p><b>All rules are reviewed.</b> Tell Claude it is done.</p>"
+    else:
+        finish = f"""<p>{left} still to review. <a href='/'>Continue one by one</a></p>
+<form method="post" action="/approve-remaining" class="bulk">
+  <h3>Or approve all {left} remaining rules in one step</h3>
+  <label class="tick"><input type="checkbox" name="confirm" value="yes" required>
+    I have read each of these rules against the words of the law, and I approve them.</label>
+  <p class="help">Each approval is recorded under your name, with a note that it was given in one
+  step. You can still open any rule afterwards and change your answer.</p>
+  <button class="approve" type="submit">Approve all {left} remaining rules</button>
+</form>"""
     return (
         f"<p class='totals'>{approved} approved, {rejected} rejected, {left} not reviewed.</p>"
         f"{finish}<ol class='all'>{''.join(rows)}</ol>"
@@ -258,6 +285,9 @@ def _page(title: str, body: str) -> str:
                background:var(--sheet); border:1px solid var(--rule); padding:12px 16px; margin:0; }}
   dl.fields dt {{ color:var(--soft); }} dl.fields dd {{ margin:0; }}
   ul.conditions {{ margin:0; padding-left:1.1em; }} ul.conditions li {{ margin:2px 0; }}
+  form.bulk {{ background:var(--sheet); border:1px solid var(--strong); padding:4px 16px 16px; }}
+  label.tick {{ display:flex; gap:10px; align-items:flex-start; font-weight:500; font-size:15px; }}
+  label.tick input {{ width:18px; height:18px; margin-top:3px; }}
   blockquote {{ margin:0; background:var(--sheet); border:1px solid var(--strong); padding:12px 16px;
                font-size:17px; line-height:1.65; max-width:68ch; }}
   .machine {{ font-size:15px; padding:10px 14px; border:1px solid var(--rule); background:var(--sheet); }}

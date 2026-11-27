@@ -24,6 +24,7 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D16 | Site design: a preflight checklist on a chart table; one signal colour for what changes; the date tape as the signature move; Anime.js, three.js, React Bits and Playwright used, other resources studied | 2026-11-27 | Asked for by Aditya, logged |
 | D17 | A person approves or rejects each rule on a local review page; the live site uses approved rules only; reviews are added rows, rules never change | 2026-11-27 | Chosen by Aditya, logged |
 | D18 | API on Cloud Run (us-east4) beside Neon; database address in Secret Manager; approved rules only; scales to zero for now | 2026-11-27 | Logged |
+| D19 | Site on Vercel at telecompass.vercel.app, deployed from this machine; GitHub to be connected after the push | 2026-11-27 | Logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -31,6 +32,7 @@ Open items:
 
 - The fetcher re-checks `robots.txt` at the start of every run, in case one appears.
 - Switch the API to one warm instance before the link is shared widely (D18).
+- Connect the GitHub repository to Vercel after `main` is pushed, so pushes deploy (D19).
 - Human labels: none yet. The labelling page is ready (`python -m telecompass label florida`)
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
@@ -791,3 +793,25 @@ since every answer makes several database reads.
 
 **Trade-off.** Public and without a login, as the site needs. The daily caps in the database
 (D15) and the instance cap bound both abuse and cost.
+
+## D19. How the site is hosted
+
+**What.** The site runs on Vercel as the project `telecompass`, live at
+`https://telecompass.vercel.app`. Its one setting, `API_URL`, points at the Cloud Run API
+(D18). The browser only ever talks to the site; the site's server calls the API.
+
+- Deployed from this machine with the Vercel command line (`vercel deploy --prod` in `web/`),
+  after Aditya signed in to his own Vercel account in the browser.
+- Vercel tried to connect the GitHub repository and could not, because its GitHub app has no
+  access to the repository yet. Connecting it later makes every push to `main` deploy itself.
+- Vercel's login protection applies to preview addresses only; the production address is public.
+- Checked on 2026-11-27 as a stranger would: the home page, the link-preview image and both
+  routes through to the API answer; a saved check produced a share link that opens publicly and
+  shows every rule as approved by a person.
+
+**Considered.** Importing the repository on Vercel's website. That deploys from `main`, which
+would have needed the work pushed before the site was proven; deploying from the machine came
+first, and the GitHub connection follows the push.
+
+**Trade-off.** Until GitHub is connected, a change reaches the site only when someone runs the
+deploy command.

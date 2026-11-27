@@ -106,7 +106,7 @@ export function TimeTape({
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-rule pt-3">
           {marks.length > 0 ? (
-            <p className="w-full text-[14px] text-ink-soft sm:w-auto sm:flex-1">
+            <p className="w-full text-[14px] text-ink-soft">
               <span aria-hidden="true" className="mr-2 inline-block h-3 w-0.5 bg-signal align-[-1px]" />
               {marks.length === 1 ? "One date" : `${marks.length} dates`} where a rule we hold starts or
               ends:{" "}
@@ -120,7 +120,7 @@ export function TimeTape({
               .
             </p>
           ) : (
-            <p className="w-full text-[14px] text-ink-soft sm:w-auto sm:flex-1">No rule in this answer carries a date.</p>
+            <p className="w-full text-[14px] text-ink-soft">No rule in this answer carries a date.</p>
           )}
           <div className="flex gap-2">
             <button

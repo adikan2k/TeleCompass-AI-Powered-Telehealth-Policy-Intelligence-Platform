@@ -4,6 +4,8 @@
 line by line whether it is allowed and payable, with the exact words of the law behind each
 answer.
 
+**Live:** https://telecompass.vercel.app
+
 It is built for mental-health telehealth companies that are expanding across states. Their
 recurring questions are: may this clinician treat a patient in that state, may the visit be by
 phone, will the payer pay, and may a controlled medicine be prescribed.

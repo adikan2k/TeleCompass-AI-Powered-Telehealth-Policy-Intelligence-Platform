@@ -64,7 +64,12 @@ def test_deciding_and_applying_through_the_page_changes_the_live_rules(
     add = next(p for p in made if p["kind"] == "add")
     retire = next(p for p in made if p["kind"] == "retire")
 
-    client.post(f"/changes/{world['diff']}/proposal/{add['id']}", content="decision=approved")
+    answer = client.post(
+        f"/changes/{world['diff']}/proposal/{add['id']}", content="decision=approved"
+    )
+    # Back to the same card, where the decision now shows, not to the top of the page.
+    assert answer.headers["location"] == f"/changes/{world['diff']}#proposal-{add['id']}"
+    assert f"id='proposal-{add['id']}'" in client.get(f"/changes/{world['diff']}").text
     client.post(f"/changes/{world['diff']}/proposal/{retire['id']}", content="decision=rejected")
     assert {r.id for r in preflight.rules_for(conn, "florida")} == {
         world["video"].id,

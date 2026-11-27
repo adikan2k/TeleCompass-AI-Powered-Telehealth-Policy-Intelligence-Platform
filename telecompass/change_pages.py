@@ -145,7 +145,8 @@ def add_change_pages(
             }[kind]
             note = f"<p class='help'>{escape(proposal['note'])}</p>" if proposal["note"] else ""
             card = (
-                f"<div class='proposal {kind}'><h4>{heading}</h4><p><b>{escape(rule.summary)}</b></p>"
+                f"<div class='proposal {kind}' id='proposal-{proposal['id']}'><h4>{heading}</h4>"
+                f"<p><b>{escape(rule.summary)}</b></p>"
                 f"<blockquote>{escape(rule.quote or '')}</blockquote>{note}{context}"
             )
         else:
@@ -160,7 +161,7 @@ def add_change_pages(
                         "Compare it on the <a href='/sources'>Official copies</a> page.</p>"
                     )
             card = (
-                f"<div class='proposal {kind}'><h4>{heading}</h4>"
+                f"<div class='proposal {kind}' id='proposal-{proposal['id']}'><h4>{heading}</h4>"
                 f"<p class='help'>{escape(proposal['note'] or '')}</p>{hint}"
             )
         if kind in CHOICES:
@@ -189,7 +190,7 @@ def add_change_pages(
         ).fetchone()
         if row is not None and row["kind"] in CHOICES and decision in ("approved", "rejected"):
             change_agent.save_decision(conn, proposal_id, decision, None, reviewer, now())
-        return RedirectResponse(f"/changes/{diff_id}", 303)
+        return RedirectResponse(f"/changes/{diff_id}#proposal-{proposal_id}", 303)
 
     @app.post("/changes/{diff_id}/apply")
     def apply(diff_id: int) -> RedirectResponse:

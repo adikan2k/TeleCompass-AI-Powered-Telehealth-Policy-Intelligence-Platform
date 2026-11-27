@@ -304,6 +304,23 @@ has compared the two documents and written their name against it.
 The agency's own archive links those three alerts to the email-archive site that forbids
 fetching, so there may be no official copy of them at all.
 
+**Follow-up, 2026-11-27: what the first fetch returned.** Of the 25 cited links, 17 were read,
+6 are on the two sites that forbid fetching, and 2 failed (one Medicaid policy PDF now answers
+404, and `psypact.org` has an expired certificate). That leaves 24 entries to send to the model,
+11 with no fetchable source, 2 whose source failed, 9 marked "No Reference Found" and 1 with
+no SOURCE line.
+
+Two things changed from the decision as first written, and are flagged to Aditya:
+
+- **A Word reader was added.** The Administrative Code site serves Florida Medicaid's
+  telemedicine rule (59G-1.057) only as an old Word `.doc` file. D7 said any type other than
+  HTML and PDF would be reported as unread. That rule backs most of the Medicaid entries, so a
+  small reader for that format was added to `sources.py`, with the `olefile` library and tests.
+- **A failed or forbidden link is not asked for again on a later run** unless `--retry` is
+  given. A stored document that could not be read is read again from the stored copy.
+
+The doorway step was needed exactly once, for that same rule.
+
 ## D8. Rules and extraction
 
 **What.** A `rule` table as in the plan, plus the lineage that makes a rule traceable:

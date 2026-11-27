@@ -6,11 +6,13 @@ as `forbidden` and never worked around. Fetched documents are untrusted data.
 
 import io
 import re
+import struct
 import tomllib
 from importlib import resources
 from urllib.parse import urljoin, urlsplit
 
 import httpx
+import olefile
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 from pypdf import PdfReader
@@ -32,6 +34,7 @@ _BLOCK_TAGS = [
     "td", "th", "tr", "ul",
 ]  # fmt: skip
 _DROP_TAGS = ["script", "style", "noscript", "template"]
+_OLE_MAGIC = bytes.fromhex("d0cf11e0a1b11ae1")  # how an old Word .doc file starts
 
 
 class Override(BaseModel):
@@ -81,6 +84,71 @@ def pdf_to_text(data: bytes) -> str | None:
     return _tidy("\n".join(pages))
 
 
+def word_pieces_text(word: bytes, table: bytes) -> str:
+    """The main text of a Word 97-2003 document, from its two internal streams.
+
+    The file header (FIB) says where the "piece table" sits in the table stream. Each piece
+    is a run of characters stored in the WordDocument stream, either one byte per character
+    (cp1252) or two (UTF-16). Joining the pieces in order gives the text.
+    """
+    main_chars = struct.unpack_from("<I", word, 0x004C)[0]
+    clx_start, clx_size = struct.unpack_from("<II", word, 0x01A2)
+    clx = table[clx_start : clx_start + clx_size]
+    at = 0
+    while clx[at] == 0x01:  # formatting runs that come before the piece table
+        at += 3 + struct.unpack_from("<H", clx, at + 1)[0]
+    if clx[at] != 0x02:
+        raise ValueError("No piece table found.")
+    size = struct.unpack_from("<I", clx, at + 1)[0]
+    pieces = clx[at + 5 : at + 5 + size]
+    count = (size - 4) // 12
+    starts = struct.unpack_from(f"<{count + 1}I", pieces, 0)
+    parts = []
+    for index in range(count):
+        where = struct.unpack_from("<I", pieces, 4 * (count + 1) + 8 * index + 2)[0]
+        chars = starts[index + 1] - starts[index]
+        if where & 0x40000000:  # one byte per character
+            begin = (where & 0x3FFFFFFF) // 2
+            parts.append(word[begin : begin + chars].decode("cp1252", errors="replace"))
+        else:
+            parts.append(word[where : where + 2 * chars].decode("utf-16-le", errors="replace"))
+    return "".join(parts)[:main_chars]
+
+
+def _clean_word_text(text: str) -> str:
+    """Drop Word's field codes and control marks; turn paragraph and cell marks into lines."""
+    out = []
+    fields: list[bool] = []  # one per open field; True while inside its hidden instruction
+    for char in text:
+        if char == "\x13":  # a field begins: what follows is its hidden instruction
+            fields.append(True)
+        elif char == "\x14":  # the field's visible result begins
+            if fields:
+                fields[-1] = False
+        elif char == "\x15":  # the field ends
+            if fields:
+                fields.pop()
+        elif any(fields):
+            continue
+        elif char in "\r\x07\x0b\x0c":
+            out.append("\n")
+        elif char >= " " or char == "\t":
+            out.append(char)
+    return "".join(out)
+
+
+def doc_to_text(data: bytes) -> str | None:
+    """Text of an old Word .doc file, or None if it cannot be read."""
+    try:
+        with olefile.OleFileIO(io.BytesIO(data)) as ole:
+            word = ole.openstream("WordDocument").read()
+            table_name = "1Table" if struct.unpack_from("<H", word, 0x0A)[0] & 0x0200 else "0Table"
+            table = ole.openstream(table_name).read()
+        return _tidy(_clean_word_text(word_pieces_text(word, table)))
+    except Exception:  # noqa: BLE001 - a broken file must not stop the run
+        return None
+
+
 def _tidy(text: str) -> str:
     lines = (re.sub(r"\s+", " ", line).strip() for line in text.splitlines())
     return "\n".join(line for line in lines if line)
@@ -90,6 +158,8 @@ def extract_text(page: FetchedPage) -> str | None:
     """Plain text of a fetched document, or None for a type we cannot read."""
     if page.content.startswith(b"%PDF") or "pdf" in page.content_type:
         return pdf_to_text(page.content)
+    if page.content.startswith(_OLE_MAGIC):
+        return doc_to_text(page.content)
     if "html" in page.content_type:
         return html_to_text(page.body)
     if page.content_type.startswith("text/"):
@@ -133,15 +203,61 @@ def cited_urls(entries: list[StoredEntry]) -> list[str]:
     return list(seen)
 
 
+def reread_stored(conn: Connection, attempt: SourceText) -> SourceText | None:
+    """Try again to read a document we already hold, without asking the site for it again."""
+    raw = store.source_raw_body(conn, attempt.id)
+    if raw is None:
+        return None
+    page = FetchedPage(
+        url=attempt.final_url or attempt.url,
+        status=attempt.http_status or 200,
+        fetched_at=attempt.fetched_at,
+        sha256=attempt.sha256 or "",
+        body=raw.decode("utf-8", errors="replace"),
+        content=raw,
+        content_type=attempt.content_type or "",
+    )
+    text = extract_text(page)
+    if not text:
+        return None
+    return store.save_source_text(
+        conn,
+        url=attempt.url,
+        fetch_url=attempt.fetch_url,
+        fetched_at=attempt.fetched_at,
+        outcome=FETCHED,
+        final_url=attempt.final_url,
+        http_status=attempt.http_status,
+        content_type=attempt.content_type,
+        sha256=attempt.sha256,
+        raw_body=raw,
+        text=text,
+        note="Read again from the stored copy. The site was not asked again.",
+    )
+
+
 def fetch_source(
-    conn: Connection, fetcher: Fetcher, url: str, overrides: dict[str, Override]
+    conn: Connection,
+    fetcher: Fetcher,
+    url: str,
+    overrides: dict[str, Override],
+    retry: bool = False,
 ) -> SourceText:
-    """Get one cited document, or record why we could not. One attempt, never a retry loop."""
+    """Get one cited document, or record why we could not.
+
+    A document is asked for once. A later run does not ask again unless `retry` is set or a
+    confirmed official copy now points somewhere new. A stored document that could not be read
+    is read again from the stored copy, never fetched again.
+    """
     existing = store.latest_source_text(conn, url)
-    if existing is not None and existing.outcome == FETCHED:
-        return existing
     override = overrides.get(url)
     fetch_url = override.official_url if override else url
+    if existing is not None and existing.outcome == FETCHED:
+        return existing
+    if existing is not None and existing.outcome == UNREADABLE:
+        return reread_stored(conn, existing) or existing
+    if existing is not None and existing.fetch_url == fetch_url and not retry:
+        return existing
 
     def record(outcome: str, note: str, page: FetchedPage | None = None, text: str | None = None):
         return store.save_source_text(
@@ -187,7 +303,11 @@ def _fetch_following_doorway(fetcher: Fetcher, url: str) -> FetchedPage:
 
 
 def fetch_sources(
-    conn: Connection, fetcher: Fetcher, urls: list[str], overrides: dict[str, Override]
+    conn: Connection,
+    fetcher: Fetcher,
+    urls: list[str],
+    overrides: dict[str, Override],
+    retry: bool = False,
 ) -> list[SourceText]:
     """Fetch every cited document once, in order."""
-    return [fetch_source(conn, fetcher, url, overrides) for url in urls]
+    return [fetch_source(conn, fetcher, url, overrides, retry) for url in urls]

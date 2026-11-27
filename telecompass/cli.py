@@ -98,7 +98,7 @@ def cmd_sources(args: argparse.Namespace) -> int:
         urls = sources.cited_urls(store.stored_entries_for(conn, run.id))
         print(f"{len(urls)} cited links. One request at a time per site, so this takes a while.")
         results = sources.fetch_sources(
-            conn, fetch.Fetcher(conn, client), urls, sources.load_overrides()
+            conn, fetch.Fetcher(conn, client), urls, sources.load_overrides(), args.retry
         )
     for outcome, count in sorted(Counter(result.outcome for result in results).items()):
         print(f"  {outcome}: {count}")
@@ -180,6 +180,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     sources_cmd = commands.add_parser("sources", help="Fetch the law the entries cite.")
     sources_cmd.add_argument("jurisdiction", type=str.lower)
+    sources_cmd.add_argument(
+        "--retry", action="store_true", help="Ask again for documents that failed before."
+    )
     sources_cmd.set_defaults(run=cmd_sources)
 
     extract_cmd = commands.add_parser("extract", help="Read the fetched law into rules.")

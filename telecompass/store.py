@@ -206,6 +206,14 @@ def latest_source_text(conn: Connection, url: str) -> SourceText | None:
     return SourceText.model_validate(row) if row else None
 
 
+def source_raw_body(conn: Connection, source_text_id: int) -> bytes | None:
+    """The stored bytes of a fetched document, or None if none were kept."""
+    row = conn.execute(
+        "SELECT raw_body FROM source_text WHERE id = %s", (source_text_id,)
+    ).fetchone()
+    return bytes(row["raw_body"]) if row and row["raw_body"] is not None else None
+
+
 def source_text_by_id(conn: Connection, source_text_id: int) -> SourceText | None:
     row = conn.execute(
         "SELECT id, url, fetch_url, final_url, fetched_at, outcome, http_status, content_type, "

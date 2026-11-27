@@ -1,5 +1,6 @@
 """Fetching cited law. No request leaves the machine: httpx is given a fake transport."""
 
+import struct
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
@@ -154,6 +155,68 @@ def test_document_already_fetched_is_not_fetched_again(conn: Connection) -> None
 
     assert second == first
     assert seen.count(CODE_59_1) == 1
+
+
+def test_failed_document_is_asked_for_again_only_on_retry(conn: Connection) -> None:
+    seen: list[str] = []
+    fetcher = fetcher_for(conn, site({CODE_59_1: httpx.Response(500)}, seen=seen))
+
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+    again = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+    assert again == first and seen.count(CODE_59_1) == 1
+
+    sources.fetch_source(conn, fetcher, CODE_59_1, {}, retry=True)
+    assert seen.count(CODE_59_1) == 2
+
+
+def test_stored_document_is_read_again_without_asking_the_site(
+    conn: Connection, monkeypatch
+) -> None:
+    seen: list[str] = []
+    fetcher = fetcher_for(conn, site({CODE_59_1: html(LAW_HTML)}, seen=seen))
+    real_reader = sources.extract_text
+    monkeypatch.setattr(sources, "extract_text", lambda page: None)  # no reader for it yet
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+    assert first.outcome == sources.UNREADABLE
+
+    monkeypatch.setattr(sources, "extract_text", real_reader)  # a reader now exists
+    second = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+
+    assert second.outcome == sources.FETCHED
+    assert "The programme reimburses live video." in second.text
+    assert (second.sha256, second.fetched_at) == (first.sha256, first.fetched_at)
+    assert "not asked again" in second.note
+    assert seen.count(CODE_59_1) == 1
+
+
+def word_streams(prefix: bytes = b"") -> tuple[bytes, bytes]:
+    """The two streams of a made-up Word file: one 1-byte piece and one 2-byte piece."""
+    word = bytearray(0x400)
+    word[0x200:0x206] = "Hello ".encode("cp1252")
+    word[0x300:0x30C] = "wörld\r".encode("utf-16-le")
+    pieces = struct.pack("<3I", 0, 6, 12)
+    pieces += struct.pack("<HIH", 0, (0x200 * 2) | 0x40000000, 0)
+    pieces += struct.pack("<HIH", 0, 0x300, 0)
+    clx = prefix + b"\x02" + struct.pack("<I", len(pieces)) + pieces
+    table = bytes(16) + clx
+    struct.pack_into("<I", word, 0x004C, 12)
+    struct.pack_into("<II", word, 0x01A2, 16, len(clx))
+    return bytes(word), table
+
+
+def test_word_text_is_joined_from_its_pieces() -> None:
+    assert sources.word_pieces_text(*word_streams()) == "Hello wörld\r"
+    formatting_first = b"\x01" + struct.pack("<H", 2) + b"\xaa\xbb"
+    assert sources.word_pieces_text(*word_streams(formatting_first)) == "Hello wörld\r"
+
+
+def test_word_field_codes_are_dropped_and_marks_become_lines() -> None:
+    raw = 'See \x13 HYPERLINK "http://x" \x14the link\x15 now\rNext\x07cell\x01'
+    assert sources._clean_word_text(raw) == "See the link now\nNext\ncell"
+
+
+def test_file_that_is_not_a_word_document_gives_none() -> None:
+    assert sources.doc_to_text(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1 not really") is None
 
 
 def test_override_is_ignored_until_a_person_confirms_it() -> None:

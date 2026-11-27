@@ -300,6 +300,33 @@ def review_summary(conn: Connection, run_id: int, rules: list[Rule]) -> dict[str
     }
 
 
+def run_headline(conn: Connection, run: dict[str, Any]) -> dict[str, Any]:
+    """The few numbers that sum up one run, so runs can be set side by side."""
+    rules = rule_store.rules_for(conn, run["id"])
+    lines = grade_lines(store.answers_for(conn, run["parse_run_id"]), rules)
+    outcomes = Counter(line["outcome"] for line in lines)
+    check = rule_counts(rules)["quote_check"]
+    auto = review_summary(conn, run["id"], rules)
+    return {
+        "run_id": run["id"],
+        "started_at": run["started_at"].isoformat(),
+        "model": run["model"],
+        "prompt_version": run["prompt_version"],
+        "rules": len(rules),
+        "distinct_quoted_rules": auto["distinct_rules"],
+        "quotes_checked": check["checked"],
+        "quotes_found_word_for_word": check["passed"],
+        "answer_key_matched": outcomes.get(AGREE, 0) + outcomes.get(AGREE_NOTHING_FOUND, 0),
+        "answer_key_wrong": outcomes.get(WRONG, 0),
+        "answer_key_total": len(lines),
+        "review_reviewed": auto["reviewed"],
+        "review_right": auto["right"],
+        "review_wrong": auto["wrong"],
+        "review_cannot_tell": auto["cannot_tell"],
+        "cost_usd": float(rule_store.call_totals(conn, run["id"])["cost_usd"]),
+    }
+
+
 def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[str, Any]:
     """Everything the results file holds, read from the database."""
     run = rule_store.latest_run(conn, jurisdiction)
@@ -318,6 +345,7 @@ def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[st
         "run": {
             "id": run["id"],
             "model": run["model"],
+            "prompt_version": run["prompt_version"],
             "started_at": run["started_at"].isoformat(),
             "cap_usd": float(run["cap_usd"]),
             "parse_run_id": run["parse_run_id"],
@@ -347,6 +375,7 @@ def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[st
         },
         "labels": label_summary(conn, run["id"], rules),
         "automated_review": review_summary(conn, run["id"], rules),
+        "runs": [run_headline(conn, each) for each in rule_store.runs_for(conn, jurisdiction)],
     }
 
 

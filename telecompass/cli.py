@@ -119,7 +119,13 @@ def cmd_extract(args: argparse.Namespace) -> int:
         client, tracer = llm.OpenAIClient(), llm.LangfuseTracer()
         cap = Decimal(args.cap)
         run_id = rule_store.start_run(
-            conn, args.jurisdiction, run.id, llm.EXTRACTION_MODEL, cap, fetch.utc_now()
+            conn,
+            args.jurisdiction,
+            run.id,
+            llm.EXTRACTION_MODEL,
+            cap,
+            fetch.utc_now(),
+            extract.PROMPT_VERSION,
         )
         gate = llm.ModelGate(conn, client, tracer, run_id, cap)
         try:

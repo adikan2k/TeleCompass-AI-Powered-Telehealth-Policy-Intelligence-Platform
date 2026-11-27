@@ -11,15 +11,29 @@ from telecompass.models import Rule
 
 
 def start_run(
-    conn: Connection, jurisdiction: str, parse_run_id: int, model: str, cap: Decimal, at: datetime
+    conn: Connection,
+    jurisdiction: str,
+    parse_run_id: int,
+    model: str,
+    cap: Decimal,
+    at: datetime,
+    prompt_version: str = "v1",
 ) -> int:
     row = conn.execute(
-        "INSERT INTO extraction_run (jurisdiction, parse_run_id, model, cap_usd, started_at) "
-        "VALUES (%s, %s, %s, %s, %s) RETURNING id",
-        (jurisdiction, parse_run_id, model, cap, at),
+        "INSERT INTO extraction_run "
+        "(jurisdiction, parse_run_id, model, cap_usd, started_at, prompt_version) "
+        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (jurisdiction, parse_run_id, model, cap, at, prompt_version),
     ).fetchone()
     conn.commit()
     return row["id"]
+
+
+def runs_for(conn: Connection, jurisdiction: str) -> list[dict[str, Any]]:
+    """Every extraction run for a jurisdiction, oldest first."""
+    return conn.execute(
+        "SELECT * FROM extraction_run WHERE jurisdiction = %s ORDER BY id", (jurisdiction,)
+    ).fetchall()
 
 
 def latest_run(conn: Connection, jurisdiction: str) -> dict[str, Any] | None:

@@ -19,6 +19,8 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D11 | Labelling screen: a local FastAPI page that shows Aditya 30 rules, one at a time, beside the source text, without the grade or the quote-check result | 2026-11-26 | Approved by Aditya |
 | D12 | Automated review: a second model (`gpt-6-luna`) checks each distinct rule against the stored law. Reported apart from human labels, which stay at 0 of 30 for now | 2026-11-27 | Chosen by Aditya, logged |
 | D13 | Rules engine in plain Python decides each line of a visit from quote-checked rules; federal Medicare rules come from the CMS Telehealth FAQ through the same pipeline | 2026-11-27 | Logged |
+| D14 | Audience: mental-health telehealth companies expanding across states. User testing moves to right after launch | 2026-11-27 | Chosen by Aditya, logged |
+| D15 | Live site: FastAPI on Cloud Run over the same engine, Next.js in `web/` on Vercel, share links, daily request caps in the database, no free text and no model on the public path | 2026-11-27 | Logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -591,3 +593,70 @@ every other rule, with no special path.
 - The CMS FAQ's PDF text had a font fault: "effective" came out as "ePective". A repair for
   that was added to the PDF reader. It runs only when a document has no "ff" at all, so it
   cannot alter a healthy document, and it is tested.
+
+## D14. Who this is for
+
+**What.** TeleCompass is aimed at one audience: mental-health telehealth companies that are
+expanding across states. Their recurring questions are the ones the engine already answers:
+may this clinician treat a patient in that state, may the visit be by phone, will the payer pay,
+and may a controlled drug such as a stimulant be prescribed.
+
+**Why.** One sharp audience makes every later choice easier: which states to add in M6, which
+example visits to show, and who to ask to try it. Chosen by Aditya on 2026-11-27.
+
+**What follows from it.**
+
+- The five states added in M6 are picked for where tele-mental-health companies operate and for
+  contrast in their rules, not alphabetically.
+- "Five people from healthcare try a visit" moves from the end of M7 to right after the site
+  is live, so their reactions can still change the product. It stays an **[ADITYA]** task.
+- "What changed" (M5) is treated as the feature that brings a user back, not as an extra.
+
+**Trade-off.** Other users (primary care, physical therapy, pharmacy) are served only where
+the same rules happen to cover them.
+
+## D15. The live site and its API
+
+**What.**
+
+- **API.** A FastAPI app, `telecompass/api.py`, for Cloud Run. It runs the same engine as the
+  command line. Endpoints: the form's options, run a preflight, fetch a stored decision by its
+  share id, and a health check. Every response carries "Not legal advice" and the date the
+  sources were last fetched (rule 18).
+- **Share links.** Each decision gets a random public id. The link shows the stored answer
+  exactly as it was given, with the rules and quotes it rested on, even if rules change later.
+- **No free text and no model on the live site.** The visit is entered through a short form of
+  fixed choices. The plan allowed "a short form or one sentence in"; the sentence box was left
+  out on purpose. A text box on a health site invites people to paste patient details, which
+  rule 17 forbids, and it would send that text to a model and to tracing. A form of fixed
+  choices cannot hold a name, costs nothing per request and cannot be abused to run up a bill.
+- **Limits.** Requests are counted per day in a `rate_counter` table (rule 21): a cap per
+  visitor and a cap for the whole site. A visitor is counted by a one-way hash of their address
+  and the date; the address itself is not stored.
+- **Site.** A new Next.js app in `web/` with Tailwind and shadcn, for Vercel. Two pages: the
+  preflight form with its answer and a date slider, and the shared decision. The site's server
+  calls the API, so the browser talks to one address only.
+- **The old app is removed.** The Ollama, Pinecone, Prisma, PDF upload and chat code at the
+  repository root goes, as the plan says. It stays in git history. The README is rewritten to
+  describe only what works today (rule 19), with credit to the original team.
+- **Look.** Its own design, not Evidentia's. Verdicts are words and shapes, never colour alone.
+
+**Why.** The engine is already deterministic and stores each decision; the site is a thin
+layer over it. Keeping the model off the public path removes the two biggest risks of a public
+demo at once: patient data and cost.
+
+**Considered.**
+
+- A sentence box parsed by a model into the form. Friendlier, but see above. It can return
+  later behind a clear warning and a daily cost cap if users ask for it.
+- Calling the API straight from the browser. Needs cross-site settings and exposes a second
+  address for no gain.
+- Keeping the old Next.js app and editing it. Almost none of it survives the change.
+
+**Trade-offs and what a person must still do.**
+
+- The rules shown are still `draft`. Rule 13 says a person approves rules before they go live.
+  The site states plainly how each rule was checked. Aditya decides before launch whether to
+  approve the rules himself or to launch with them marked as machine-checked drafts.
+- Accounts and keys are Aditya's: Neon for the database, Google Cloud for the API, Vercel for
+  the site.

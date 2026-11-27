@@ -362,7 +362,8 @@ def cmd_approve(args: argparse.Namespace) -> int:
     """Start the local page where a person approves or rejects each rule."""
     import uvicorn
 
-    conn = _open_database()
+    _open_database().close()  # brings the schema up to date
+    conn = db.LongLivedConnection(_database_url())
     app = approve_app.create_app(conn, args.reviewer, db_url=_database_url())
     print(f"Rule review page: http://127.0.0.1:{args.port}/   (Ctrl+C to stop)")
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")

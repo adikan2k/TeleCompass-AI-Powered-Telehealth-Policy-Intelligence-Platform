@@ -71,7 +71,9 @@ def rules_for(conn: Connection, jurisdiction: str) -> list[Rule]:
         if decision == "approved":
             update["status"] = "approved"
         usable.append(rule.model_copy(update=update))
-    return usable
+    # Two entries can cite the same law, so a change run can read the same rule twice; and a
+    # change can re-read a rule already live. Keep one of each, the oldest.
+    return distinct_quoted_rules(usable)
 
 
 def decide_visit(conn: Connection, visit: Visit) -> Decision:

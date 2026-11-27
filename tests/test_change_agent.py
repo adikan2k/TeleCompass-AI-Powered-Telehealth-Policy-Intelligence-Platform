@@ -194,6 +194,37 @@ def test_approved_decisions_flow_through_and_rejected_ones_do_not(
     assert str(retired_on) == "2026-11-01"  # the date of the snapshot that showed the change
 
 
+def test_the_same_rule_approved_twice_is_used_once(
+    conn: Connection, saver: PostgresSaver, world: dict
+) -> None:
+    graph = agent(conn, saver, FakeModel(rpm_answer))
+    change_agent.start(graph, world["diff"])
+    add = next(p for p in proposals(conn, world["diff"]) if p["kind"] == "add")
+    first = rule_store.rule_by_id(conn, add["rule_id"])
+    twin = rule_store.save_rule(
+        conn,
+        run_id=first.extraction_run_id,
+        entry_id=first.entry_id,
+        jurisdiction="florida",
+        rule_type=first.rule_type,
+        aspect=first.aspect,
+        effect=first.effect,
+        summary="The same rule, read from a second entry.",
+        quote=first.quote,
+        quote_verified=True,
+        status="draft",
+        payer="medicaid",
+        modality="remote_patient_monitoring",
+        created_at=AT,
+    )
+    for rule_id in (first.id, twin.id):
+        rule_store.save_rule_review(conn, rule_id, "approved", None, "Aditya Kanbargi", AT)
+
+    live = [rule.id for rule in preflight.rules_for(conn, "florida")]
+
+    assert first.id in live and twin.id not in live
+
+
 def test_a_rejected_proposal_changes_nothing(
     conn: Connection, saver: PostgresSaver, world: dict
 ) -> None:

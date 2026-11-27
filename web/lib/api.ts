@@ -1,12 +1,7 @@
 // What the TeleCompass API sends, and where the site's server finds it.
 // The browser never calls the API directly: it calls this site, and this site calls the API.
 
-export type Verdict =
-  | "allowed"
-  | "allowed_with_conditions"
-  | "not_allowed"
-  | "silent"
-  | "not_applicable";
+export type Verdict = "allowed" | "allowed_with_conditions" | "not_allowed" | "silent" | "not_applicable";
 
 export type Evidence = {
   rule_id: number;
@@ -62,6 +57,61 @@ export type VisitInput = {
   service_category: string;
   prescription: string;
   visit_date: string;
+};
+
+export type RuleCard = {
+  id: number;
+  rule_type: string;
+  rule_type_label: string;
+  summary: string;
+  quote: string | null;
+  source_url: string | null;
+  source_fetched_at: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+};
+
+export type PageChange = {
+  kind: "added" | "removed" | "changed";
+  category: string;
+  topic: string;
+  subtopic: string | null;
+  rule_type_label: string | null;
+  fields: string[];
+  review: string;
+};
+
+export type Place = {
+  code: string;
+  name: string;
+  page: {
+    from: { captured_at: string; origin: string };
+    to: { captured_at: string; origin: string };
+    page_url: string | null;
+    changes: PageChange[];
+  } | null;
+  rule_changes: {
+    change: "added" | "retired";
+    on: string | null;
+    by: string | null;
+    rule: RuleCard;
+  }[];
+  dates: {
+    event: "starts" | "ends";
+    on: string;
+    past: boolean;
+    rule: RuleCard;
+  }[];
+  law_changed: { url: string; detected_at: string }[];
+};
+
+export type Changes = {
+  care: string;
+  today: string;
+  window: { from: string; to: string };
+  not_held: string[];
+  places: Place[];
+  notice: Notice;
 };
 
 /** The API's address. Set API_URL where the site is hosted; locally it is the dev API. */

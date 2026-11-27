@@ -110,6 +110,92 @@ export function decision(date: string, id: string | null) {
   };
 }
 
+const card = (id: number, summary: string, quote: string, to: string | null = null) => ({
+  id,
+  rule_type: "medicaid_modality",
+  rule_type_label: "Medicaid coverage by modality",
+  summary,
+  quote,
+  source_url: "https://example.org/invented-code/59-1",
+  source_fetched_at: "2026-11-27",
+  effective_from: null,
+  effective_to: to,
+});
+
+function pageChange(kind: string, topic: string, review: string) {
+  return {
+    kind,
+    category: "Medicaid",
+    topic,
+    subtopic: "POLICY",
+    rule_type_label: "Medicaid coverage by modality",
+    fields: [],
+    review,
+  };
+}
+
+export function changes(care: string) {
+  return {
+    care,
+    today: "2026-11-27",
+    window: { from: "2026-08-29", to: "2027-11-27" },
+    not_held: [],
+    places: [
+      {
+        code: "FL",
+        name: "Florida",
+        page: {
+          from: { captured_at: "2026-05-21", origin: "wayback" },
+          to: { captured_at: "2026-11-27", origin: "live" },
+          page_url: "https://example.org/policy/florida",
+          changes: [
+            pageChange("added", "Remote Patient Monitoring", "rule added"),
+            pageChange("removed", "Store and Forward", "waiting for review"),
+          ],
+        },
+        rule_changes: [
+          {
+            change: "added",
+            on: "2026-11-27",
+            by: "A Reviewer",
+            rule: card(9, "Medicaid pays for remote monitoring.", "The programme reimburses remote monitoring."),
+          },
+        ],
+        dates: [],
+        law_changed: [],
+      },
+      {
+        code: "US",
+        name: "Federal (Medicare)",
+        page: null,
+        rule_changes: [],
+        dates: [
+          {
+            event: "ends",
+            on: "2027-01-30",
+            past: false,
+            rule: card(3, "Patients may be at home for now.", "Through January 30, 2027, patients may be anywhere.", "2027-01-30"),
+          },
+        ],
+        law_changed: [],
+      },
+    ],
+    notice,
+  };
+}
+
+/** Mock the site's /api/options and /api/changes. Returns the queries asked for. */
+export async function mockChanges(page: Page): Promise<URLSearchParams[]> {
+  const asked: URLSearchParams[] = [];
+  await page.route("**/api/options", (route) => route.fulfill({ json: options }));
+  await page.route(/\/api\/changes\?/, async (route: Route) => {
+    const query = new URL(route.request().url()).searchParams;
+    asked.push(query);
+    await route.fulfill({ json: changes(query.get("care") ?? "behavioral_health") });
+  });
+  return asked;
+}
+
 export type Calls = { body: Record<string, unknown>; store: boolean }[];
 
 /** Mock the site's own /api routes. Returns the list of preflight calls made. */

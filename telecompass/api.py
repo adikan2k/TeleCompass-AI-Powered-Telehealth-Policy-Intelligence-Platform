@@ -10,11 +10,11 @@ from collections.abc import Callable
 from datetime import date, datetime
 from typing import Any, Literal
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from telecompass import config, db, preflight, scope
+from telecompass import config, db, preflight, scope, what_changed
 from telecompass.db import Connection
 from telecompass.engine import Modality, Prescription, Visit
 from telecompass.fetch import utc_now
@@ -198,6 +198,19 @@ def create_app(
                 "lines": [line.model_dump(mode="json") for line in decision.lines],
             }
             return reply(conn, body)
+
+    @app.get("/changes")
+    def changes(
+        states: str = Query("FL", max_length=200),
+        care: Literal["behavioral_health", "other"] = "behavioral_health",
+    ) -> JSONResponse:
+        """What changed for these states and this line of care, and which dates are coming up.
+        `states` is a comma-separated list of state codes."""
+        codes = sorted({code.strip().upper() for code in states.split(",") if code.strip()})
+        with open_database() as conn:
+            if any(code not in STATES for code in codes):
+                return reply(conn, {"error": "Use US state codes, separated by commas."}, 422)
+            return reply(conn, what_changed.what_changed(conn, codes, care, now().date()))
 
     @app.get("/decisions/{public_id}")
     def stored(public_id: str) -> JSONResponse:

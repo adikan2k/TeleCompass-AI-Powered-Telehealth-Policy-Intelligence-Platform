@@ -95,9 +95,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Mark />
               TeleCompass
             </Link>
-            <Link href="/#how" className="text-[14px] font-medium underline decoration-rule-strong hover:decoration-ink">
-              How answers are made
-            </Link>
+            <nav aria-label="Pages" className="flex items-center gap-4 text-[14px] font-medium sm:gap-5">
+              <Link href="/changes" className="underline decoration-rule-strong hover:decoration-ink">
+                What changed
+              </Link>
+              <Link href="/#how" className="underline decoration-rule-strong hover:decoration-ink">
+                How it works
+              </Link>
+            </nav>
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-[84rem] flex-1 px-4 py-8 sm:px-6 sm:py-10">

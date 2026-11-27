@@ -20,6 +20,7 @@ from telecompass.db import Connection
 from telecompass.extract import select_passages
 from telecompass.fetch import utc_now
 from telecompass.models import Rule
+from telecompass.review import distinct_quoted_rules
 
 SAMPLE_SIZE = 30
 SAMPLE_SEED = 20261126
@@ -35,14 +36,8 @@ def draw_sample(rules: list[Rule], size: int = SAMPLE_SIZE, seed: int = SAMPLE_S
     copy (same rule type, effect and quote) is eligible, so no label is spent on a repeat.
     """
     groups: dict[str, list[int]] = defaultdict(list)
-    seen: set[tuple[str, str, str]] = set()
-    for rule in sorted(rules, key=lambda rule: rule.id):
-        if rule.effect == "silent" or not rule.quote:
-            continue
-        key = (rule.rule_type, rule.effect, " ".join(rule.quote.split()))
-        if key not in seen:
-            seen.add(key)
-            groups[rule.rule_type].append(rule.id)
+    for rule in distinct_quoted_rules(rules):
+        groups[rule.rule_type].append(rule.id)
     rng = random.Random(seed)
     for ids in groups.values():
         ids.sort()

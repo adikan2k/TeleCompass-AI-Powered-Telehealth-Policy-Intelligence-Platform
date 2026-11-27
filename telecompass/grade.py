@@ -14,6 +14,7 @@ from typing import Any
 from telecompass import extract, rule_store, scope, store
 from telecompass.db import Connection
 from telecompass.models import GlanceAnswer, Rule
+from telecompass.review import distinct_quoted_rules
 
 RESULTS_DIR = Path("evals") / "results"
 
@@ -261,6 +262,44 @@ def label_summary(conn: Connection, run_id: int, rules: list[Rule]) -> dict[str,
     }
 
 
+def review_summary(conn: Connection, run_id: int, rules: list[Rule]) -> dict[str, Any]:
+    """The automated second-model review. Reported apart from the human labels, always."""
+    reviews = rule_store.latest_reviews(conn, run_id)
+    distinct = distinct_quoted_rules(rules)
+    items = [
+        {
+            "rule_id": rule.id,
+            "rule_type": rule.rule_type,
+            "verdict": reviews[rule.id]["verdict"],
+            "quote_in_source": reviews[rule.id]["quote_in_source"],
+            "rule_matches_source": reviews[rule.id]["rule_matches_source"],
+            "reason": reviews[rule.id]["reason"],
+        }
+        for rule in distinct
+        if rule.id in reviews
+    ]
+    verdicts = Counter(item["verdict"] for item in items)
+    by_type: dict[str, dict[str, int]] = {}
+    for item in items:
+        counts = by_type.setdefault(item["rule_type"], {"right": 0, "wrong": 0, "cannot_tell": 0})
+        counts[item["verdict"]] += 1
+    return {
+        "kind": "automated",
+        "models": sorted({review["model"] for review in reviews.values()}),
+        "distinct_rules": len(distinct),
+        "reviewed": len(items),
+        "right": verdicts.get("right", 0),
+        "wrong": verdicts.get("wrong", 0),
+        "cannot_tell": verdicts.get("cannot_tell", 0),
+        "by_rule_type": by_type,
+        "items": items,
+        "note": (
+            "A second model, different from the one that wrote the rules, checked each distinct "
+            "rule against the stored law. This is an automated check, not a human review."
+        ),
+    }
+
+
 def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[str, Any]:
     """Everything the results file holds, read from the database."""
     run = rule_store.latest_run(conn, jurisdiction)
@@ -303,10 +342,11 @@ def build_results(conn: Connection, jurisdiction: str, now: datetime) -> dict[st
             "caveat": (
                 "One state and at most ten lines: too few for an interval. 'agree_nothing_found' "
                 "means CCHP says No and we found no rule, which is agreement by absence. Online "
-                "prescribing has no answer-key line and is covered by the labels only."
+                "prescribing has no answer-key line; see the automated review and the labels."
             ),
         },
         "labels": label_summary(conn, run["id"], rules),
+        "automated_review": review_summary(conn, run["id"], rules),
     }
 
 

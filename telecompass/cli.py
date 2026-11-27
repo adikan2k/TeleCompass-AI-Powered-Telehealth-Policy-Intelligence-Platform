@@ -15,6 +15,7 @@ from telecompass import (
     label_app,
     llm,
     parse_cchp,
+    review,
     rule_store,
     show,
     sources,
@@ -138,6 +139,31 @@ def cmd_extract(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    """Have a second model check each distinct rule against the stored law."""
+    with _open_database() as conn:
+        run = rule_store.latest_run(conn, args.jurisdiction)
+        if run is None:
+            print(
+                f"No extraction run for {args.jurisdiction} yet. Run: extract {args.jurisdiction}"
+            )
+            return 1
+        client, tracer = llm.OpenAIClient(), llm.LangfuseTracer()
+        gate = llm.ModelGate(conn, client, tracer, run["id"], Decimal(run["cap_usd"]))
+        try:
+            counts = review.Reviewer(conn, gate, run["id"]).run(
+                rule_store.rules_for(conn, run["id"])
+            )
+        finally:
+            tracer.flush()
+        spent = rule_store.call_totals(conn, run["id"])["cost_usd"]
+    print(f"Automated review of run {run['id']} with {review.REVIEW_MODEL} (not a human review)")
+    for name, count in sorted(counts.items()):
+        print(f"  {name}: {count}")
+    print(f"  run spend so far: ${spent:.4f} of the ${run['cap_usd']:.2f} cap")
+    return 0
+
+
 def cmd_grade(args: argparse.Namespace) -> int:
     """Grade the newest run against the answer key and write the results file."""
     with _open_database() as conn:
@@ -152,7 +178,12 @@ def cmd_grade(args: argparse.Namespace) -> int:
     print(f"  answer key: {key['matched']} of {key['total']} lines matched {key['counts']}")
     check = results["rules"]["quote_check"]
     print(f"  quote check: {check['passed']} of {check['checked']} quotes found word for word")
-    print(f"  labels: {labels['labelled']} of {labels['sample_size']} labelled")
+    auto = results["automated_review"]
+    print(
+        f"  automated review: {auto['right']} right, {auto['wrong']} wrong, "
+        f"{auto['cannot_tell']} cannot tell, of {auto['reviewed']} reviewed"
+    )
+    print(f"  human labels: {labels['labelled']} of {labels['sample_size']} labelled")
     print(f"  {results['not_legal_advice']}")
     return 0
 
@@ -189,6 +220,10 @@ def build_parser() -> argparse.ArgumentParser:
     extract_cmd.add_argument("jurisdiction", type=str.lower)
     extract_cmd.add_argument("--cap", default="5.00", help="Hard cost cap in US dollars.")
     extract_cmd.set_defaults(run=cmd_extract)
+
+    review_cmd = commands.add_parser("review", help="Second-model check of each rule.")
+    review_cmd.add_argument("jurisdiction", type=str.lower)
+    review_cmd.set_defaults(run=cmd_review)
 
     grade_cmd = commands.add_parser("grade", help="Grade rules and write the results file.")
     grade_cmd.add_argument("jurisdiction", type=str.lower)

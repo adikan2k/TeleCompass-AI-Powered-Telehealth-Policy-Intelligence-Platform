@@ -191,3 +191,35 @@ def latest_labels(conn: Connection, run_id: int) -> dict[int, dict[str, Any]]:
         (run_id,),
     ).fetchall()
     return {row["rule_id"]: row for row in rows}
+
+
+def save_review(
+    conn: Connection, run_id: int, rule_id: int, model: str, review: Any, at: datetime
+) -> None:
+    """Store one automated review. Never written to `label`, which is for people only."""
+    conn.execute(
+        "INSERT INTO auto_review (run_id, rule_id, model, verdict, quote_in_source, "
+        "rule_matches_source, reason, reviewed_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        (
+            run_id,
+            rule_id,
+            model,
+            review.verdict,
+            review.quote_in_source,
+            review.rule_matches_source,
+            review.reason,
+            at,
+        ),
+    )
+    conn.commit()
+
+
+def latest_reviews(conn: Connection, run_id: int) -> dict[int, dict[str, Any]]:
+    """The newest automated review for each reviewed rule of a run, by rule id."""
+    rows = conn.execute(
+        "SELECT DISTINCT ON (rule_id) rule_id, model, verdict, quote_in_source, "
+        "rule_matches_source, reason, reviewed_at "
+        "FROM auto_review WHERE run_id = %s ORDER BY rule_id, id DESC",
+        (run_id,),
+    ).fetchall()
+    return {row["rule_id"]: row for row in rows}

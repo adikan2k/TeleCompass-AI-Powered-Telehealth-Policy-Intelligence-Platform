@@ -9,6 +9,7 @@ M2_TABLES = {
     "rule",
     "label_sample",
     "label",
+    "auto_review",
 }
 
 

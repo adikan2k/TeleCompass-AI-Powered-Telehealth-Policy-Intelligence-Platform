@@ -17,13 +17,19 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D9 | One model client: every call counted in the database, a hard cost cap per run (5 US dollars for Florida), every call traced in Langfuse, no run without Langfuse keys | 2026-11-26 | Approved by Aditya |
 | D10 | Grade: plain Python turns rules into yes or no for the 10 answer-key lines that the five rule types cover, and writes `evals/results/extraction_florida.json` | 2026-11-26 | Approved by Aditya |
 | D11 | Labelling screen: a local FastAPI page that shows Aditya 30 rules, one at a time, beside the source text, without the grade or the quote-check result | 2026-11-26 | Approved by Aditya |
+| D12 | Automated review: a second model (`gpt-6-luna`) checks each distinct rule against the stored law. Reported apart from human labels, which stay at 0 of 30 for now | 2026-11-27 | Chosen by Aditya, logged |
+
+From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
 Open items:
 
 - The fetcher re-checks `robots.txt` at the start of every run, in case one appears.
 - Create the Neon project and move the database there before the site goes live in M4.
   Confirmed by Aditya on 2026-11-26.
-- Aditya creates a Langfuse project and sets its keys before the first extraction run (D9).
+- Human labels: none yet. The labelling page is ready (`python -m telecompass label florida`)
+  whenever a person wants to check the 30 sampled rules. Until then the results file says
+  0 of 30 and nothing may present the automated review as a human one.
+- Four candidate official copies wait for a person to confirm them (D7).
 
 ---
 
@@ -457,3 +463,36 @@ fetching) and the list of licensure compacts (the compact sites' map pages hold 
 Several entries cite the same law, so the same rule appears more than once; the label sample
 now takes each distinct rule only once. Removing the repeats from the rule set itself is left
 for the rules engine in M3.
+
+## D12. Automated second-model review
+
+**What.** `python -m telecompass review florida` has a second model check each distinct rule
+that carries a quote. It answers two questions per rule: is the quote in the source word for
+word, and does the rule say what the source says. The verdict is right, wrong or cannot tell,
+with a one-sentence reason.
+
+- The reviewing model is `gpt-6-luna`. The rules were written by `gpt-6.2-sol`, so this is a
+  second opinion from a different model, not the author marking its own work.
+- It sees what a person sees on the labelling page: the rule, its quote and the nearest text of
+  the law. It does not see the quote-check result, the status or the CCHP entry.
+- Reviews go to their own table, `auto_review`, and their own section of the results file,
+  marked as automated. They are never written to `label`, which holds human judgements only.
+- Every call goes through the same gate as extraction: counted in the database, under the
+  run's cost cap, traced in Langfuse.
+- A rule judged wrong keeps its status. Changing a rule still needs a person (rule 13).
+
+**Why.** Aditya chose this over hand-labelling the 30 rules, because he is new to the domain.
+It gives a second check on every distinct rule today, and it will scale to six states in M6,
+where labelling everything by hand was never possible.
+
+**Considered.**
+
+- Entering labels on Aditya's behalf. Refused: a label is only worth something if a person
+  made it (rule 6), and a made-up human check is the one thing that could discredit the project.
+- The same model as the extraction. Cheaper to reason about, but it tends to agree with itself.
+- DeepEval's ready-made judges. They can be added in CI later; this check needed the stored
+  law and the same blind view as the labelling page.
+
+**Trade-off.** A model review is weaker evidence than a person reading the law, and a smaller
+model can be wrong in both directions. The plan's M2 asked for 30 human labels. That part is
+not met: the results file says 0 of 30, and the labelling page stays ready.

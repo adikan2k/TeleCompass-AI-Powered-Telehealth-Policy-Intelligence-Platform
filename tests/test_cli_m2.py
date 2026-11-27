@@ -81,7 +81,8 @@ def test_grade_writes_the_results_file_under_evals_results(
         "note": "Labels are written only by a person using the labelling page.",
     }
     output = capsys.readouterr().out
-    assert "labels: 0 of 0 labelled" in output
+    assert "human labels: 0 of 0 labelled" in output
+    assert "automated review: 0 right, 0 wrong, 0 cannot tell, of 0 reviewed" in output
     assert "Not legal advice. Sources last fetched 2026-03-15." in output
 
 

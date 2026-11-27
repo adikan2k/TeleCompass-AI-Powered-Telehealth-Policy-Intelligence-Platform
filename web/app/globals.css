@@ -2,8 +2,45 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * TeleCompass design tokens. The direction, and the rules behind it, are in
+ * docs/DECISIONS.md (D16). In short: a preflight checklist read off a chart table.
+ * Cool chart-paper ground, near-black green ink, white sheets, and one signal colour
+ * (international orange) that marks only the heading: the date being checked.
+ * Verdict colours are a separate job, and each verdict also has its own shape and word.
+ */
+
 @theme inline {
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-signal-soft: var(--signal-soft);
+  --color-quote: var(--quote);
+
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
@@ -12,101 +49,225 @@
   --color-stop-soft: var(--stop-soft);
   --color-quiet: var(--quiet);
   --color-quiet-soft: var(--quiet-soft);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --font-sans: var(--font-schibsted);
+  --font-heading: var(--font-schibsted);
+  --font-mono: var(--font-fragment);
+
+  /* Small, deliberate radii; the owned shape is the cut corner, not a soft round. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 :root {
-  /* TeleCompass: ink navy and compass teal on a cool grey-white. Light theme only. */
-  --background: #f4f7fa;
-  --foreground: #0d1b2a;
-  --card: #ffffff;
-  --card-foreground: #0d1b2a;
-  --popover: #ffffff;
-  --popover-foreground: #0d1b2a;
-  --primary: #0d3b4f;
+  /* Ground and ink. Contrast: ink on paper 15.6:1, ink-soft on paper 6.9:1, on sheet 7.6:1. */
+  --paper: #eef2f0;
+  --sheet: #ffffff;
+  --ink: #14211e;
+  --ink-soft: #46554f;
+  --rule: rgb(20 33 30 / 0.13);
+  --rule-strong: rgb(20 33 30 / 0.28);
+  --quote: #f4f6f2;
+
+  /* The one signal colour: the heading being checked, the needle, focus. 3.6:1 on white,
+     so it is used for marks, rings and large text only; signal-ink is its text form. */
+  --signal: #e4570e;
+  --signal-ink: #a83b05;
+  --signal-soft: #fdeadd;
+
+  /* Verdicts. Each also has a glyph shape and a word; colour is the third cue. */
+  --ok: #0b6b3c;
+  --ok-soft: #e2f2e8;
+  --warn: #7c5200;
+  --warn-soft: #f8edd2;
+  --stop: #a8201a;
+  --stop-soft: #fbe4e1;
+  --quiet: #4b5a62;
+  --quiet-soft: #e6ebed;
+
+  /* shadcn's names, mapped onto the tokens above. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
   --primary-foreground: #ffffff;
-  --secondary: #e6ecf2;
-  --secondary-foreground: #0d1b2a;
-  --muted: #e6ecf2;
-  --muted-foreground: #40516a;
-  --accent: #dcf1ed;
-  --accent-foreground: #0a4a44;
-  --destructive: #a1242a;
-  --border: #c5d0dc;
-  --input: #8fa2b7;
-  --ring: #0f766e;
-  --chart-1: #0f766e;
-  --chart-2: #0d3b4f;
-  --chart-3: #8a5a00;
-  --chart-4: #a1242a;
-  --chart-5: #40516a;
-  --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0d1b2a;
-  --sidebar-primary: #0d3b4f;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #dcf1ed;
-  --sidebar-accent-foreground: #0a4a44;
-  --sidebar-border: #c5d0dc;
-  --sidebar-ring: #0f766e;
-  /* Verdicts. Each also has its own word, icon and border style, never colour alone. */
-  --ok: #0a6638;
-  --ok-soft: #e3f4ea;
-  --warn: #7a4f00;
-  --warn-soft: #fbf0d6;
-  --stop: #a1242a;
-  --stop-soft: #fbe6e6;
-  --quiet: #40516a;
-  --quiet-soft: #e6ecf2;
+  --secondary: #e2e8e5;
+  --secondary-foreground: var(--ink);
+  --muted: #e2e8e5;
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--signal-soft);
+  --accent-foreground: var(--signal-ink);
+  --destructive: var(--stop);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--signal);
+  --radius: 4px;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border;
   }
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.55;
+    font-feature-settings: "ss01" 1;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+  p,
+  li,
+  blockquote {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--signal-soft);
+    color: var(--ink);
+  }
+  /* One focus style everywhere: a 2px signal ring, 2px off, never animated. */
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Press feedback for anything pressable. Transform only, retargetable. */
+  .press {
+    transition: transform 160ms var(--ease-out), background-color 150ms ease,
+      color 150ms ease, border-color 150ms ease;
+  }
+  .press:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  /* The owned shape: a cut top-right corner, on verdict tags and the primary action. */
+  .notch {
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+  }
+  .notch-lg {
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  }
+  /* Checklist leader: the dotted run between a checklist item and its response. */
+  .leader {
+    flex: 1 1 auto;
+    min-width: 1.5rem;
+    align-self: center;
+    border-bottom: 2px dotted var(--rule-strong);
+    transform: translateY(0.2em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* The date tape: a native range input drawn as an instrument scale. The scale and its
+   marks are drawn behind it; the input supplies the thumb, the keyboard and the ARIA. */
+.tape-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.tape-input:focus-visible {
+  outline: none;
+}
+.tape-input::-webkit-slider-runnable-track {
+  height: 44px;
+  background: transparent;
+}
+.tape-input::-moz-range-track {
+  height: 44px;
+  background: transparent;
+}
+.tape-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 44px;
+  background: var(--signal);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  border: 0;
+  cursor: grab;
+}
+.tape-input::-moz-range-thumb {
+  width: 14px;
+  height: 44px;
+  background: var(--signal);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  border: 0;
+  border-radius: 0;
+  cursor: grab;
+}
+.tape-input:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+.tape:has(.tape-input:focus-visible) {
+  outline: 2px solid var(--signal);
+  outline-offset: 4px;
+}
+
+/* A disclosure that opens by measured row height: 200ms open, 150ms close. */
+.disclose {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+.disclose[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+.disclose > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Quoted law: real reading text, with curly quotes from the stylesheet. */
+.law-quote {
+  quotes: "\201C" "\201D";
+}
+.law-quote::before {
+  content: open-quote;
+  margin-left: -0.45em;
+}
+.law-quote::after {
+  content: close-quote;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclose,
+  .disclose[data-open="true"] {
+    transition: opacity 120ms linear;
   }
 }

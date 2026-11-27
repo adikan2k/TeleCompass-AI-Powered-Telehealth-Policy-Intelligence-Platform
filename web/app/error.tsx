@@ -1,17 +1,20 @@
 "use client"; // Error boundaries must be Client Components
 
-import { Button } from "@/components/ui/button";
-
 export default function Error({ retry }: { error: unknown; retry: () => void }) {
   return (
-    <div className="max-w-2xl space-y-3">
-      <h1 className="text-3xl font-semibold tracking-tight">That did not load</h1>
-      <p className="text-base text-muted-foreground">
-        The service behind this page did not answer. It may be waking up. Please try again.
+    <div className="max-w-[60ch] space-y-4">
+      <h1 className="text-[40px] leading-[1.05] font-medium tracking-[-0.035em]">That did not load</h1>
+      <p className="text-[16px] text-ink-soft">
+        The service behind this page did not answer. It may be starting up after a quiet spell. Try
+        again in a few seconds.
       </p>
-      <Button type="button" onClick={() => retry()}>
+      <button
+        type="button"
+        onClick={() => retry()}
+        className="press notch inline-flex min-h-11 items-center bg-ink px-4 text-[15px] font-semibold text-white"
+      >
         Try again
-      </Button>
+      </button>
     </div>
   );
 }

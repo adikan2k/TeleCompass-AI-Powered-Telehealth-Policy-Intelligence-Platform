@@ -34,7 +34,7 @@ export type Line = {
 export type Notice = { not_legal_advice: string; sources_last_fetched: string };
 
 export type Decision = {
-  id: string;
+  id: string | null; // null for an answer that was shown but not stored
   created_at?: string;
   summary: string;
   lines: Line[];

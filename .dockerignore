@@ -1,0 +1,14 @@
+# Keep the API image small and keep secrets out of it.
+.env
+.env.*
+.git
+.venv
+.claude
+web
+tests
+evals
+docs
+**/__pycache__
+.pytest_cache
+.ruff_cache
+node_modules

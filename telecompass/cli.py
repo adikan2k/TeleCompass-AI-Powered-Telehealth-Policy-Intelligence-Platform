@@ -10,6 +10,7 @@ from typing import get_args
 
 from telecompass import (
     config,
+    copy_db,
     db,
     engine,
     extract,
@@ -155,6 +156,20 @@ def cmd_extract(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_copy_db(args: argparse.Namespace) -> int:
+    """Copy every row from another TeleCompass database into the one DATABASE_URL names."""
+    with _open_database() as target, db.connect(args.from_url) as source:
+        try:
+            counts = copy_db.copy_all(source, target)
+        except copy_db.TargetNotEmpty as error:
+            print(f"Nothing copied: {error}", file=sys.stderr)
+            return 1
+    print(f"Copied {sum(counts.values()):,} rows into the database DATABASE_URL names:")
+    for table, count in counts.items():
+        print(f"  {table}: {count:,}")
+    return 0
+
+
 def cmd_pointers(args: argparse.Namespace) -> int:
     """Store our hand-written pointers to official pages as entries. No network."""
     with _open_database() as conn:
@@ -286,6 +301,10 @@ def build_parser() -> argparse.ArgumentParser:
     extract_cmd.add_argument("jurisdiction", type=str.lower)
     extract_cmd.add_argument("--cap", default="5.00", help="Hard cost cap in US dollars.")
     extract_cmd.set_defaults(run=cmd_extract)
+
+    copy_cmd = commands.add_parser("copy-db", help="Copy another database into this one.")
+    copy_cmd.add_argument("--from-url", required=True, help="The database to copy from.")
+    copy_cmd.set_defaults(run=cmd_copy_db)
 
     pointers_cmd = commands.add_parser("pointers", help="Store our pointers to official pages.")
     pointers_cmd.add_argument("jurisdiction", type=str.lower)

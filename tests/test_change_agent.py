@@ -9,7 +9,7 @@ import pytest
 from langgraph.checkpoint.postgres import PostgresSaver
 
 from fakes import AT, FakeModel, FakeTracer, reply, save_source
-from telecompass import change_agent, diff, preflight, rule_store, scope, store
+from telecompass import change_agent, change_report, diff, preflight, rule_store, scope, store
 from telecompass.db import Connection
 from telecompass.extract import ExtractedRule, Extraction
 from telecompass.fetch import USER_AGENT, Fetcher
@@ -223,6 +223,35 @@ def test_the_same_rule_approved_twice_is_used_once(
     live = [rule.id for rule in preflight.rules_for(conn, "florida")]
 
     assert first.id in live and twin.id not in live
+
+
+def test_the_results_file_counts_what_was_found_decided_and_applied(
+    conn: Connection, saver: PostgresSaver, world: dict, tmp_path
+) -> None:
+    graph = agent(conn, saver, FakeModel(rpm_answer))
+    change_agent.start(graph, world["diff"])
+    for proposal in proposals(conn, world["diff"]):
+        change_agent.save_decision(conn, proposal["id"], "approved", None, "Aditya Kanbargi", AT)
+    change_agent.finish(graph, world["diff"], "Aditya Kanbargi")
+
+    report = change_report.build_report(conn, world["diff"], AT)
+    path = change_report.write_report(report, tmp_path)
+
+    assert report["compared"]["from"]["captured_at"] == "2026-05-01"
+    assert report["real_changes_in_scope"] == 2
+    assert report["proposals_by_kind"] == {"add": 1, "retire": 1}
+    assert report["decided_by_a_person"] == {
+        "approved": 2,
+        "rejected": 0,
+        "reviewers": ["Aditya Kanbargi"],
+    }
+    assert report["applied"] == {
+        "rule_rows_approved": 1,
+        "distinct_rules_now_live": 1,
+        "rules_retired": 1,
+    }
+    assert report["model_calls"] == 1
+    assert path.name == "changes_florida.json"
 
 
 def test_a_rejected_proposal_changes_nothing(

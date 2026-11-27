@@ -40,7 +40,7 @@ Open items:
 - Human labels: none yet. The labelling page is ready (`python -m telecompass label florida`)
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
-- Four candidate official copies wait for a person to confirm them on the local `/sources` page (D7, D21).
+- The four candidate official copies were confirmed by Aditya on 2026-11-27 (D7, D21). Three cited alerts still have no official copy.
 - Choose where the monthly Dagster job runs for real (D22).
 
 ---

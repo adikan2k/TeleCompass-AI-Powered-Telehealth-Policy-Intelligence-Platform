@@ -66,6 +66,13 @@ All numbers below come from the files in [`evals/results/`](evals/results/).
 Florida covers five kinds of rule: cross-state licensure, Medicaid payment by modality, consent,
 online prescribing and private-plan duties.
 
+**Change over time** ([`evals/results/changes_florida.json`](evals/results/changes_florida.json)).
+The Florida policy page as captured on 21 May 2026 (Internet Archive) was compared with the copy
+fetched on 27 Nov 2026: 6 real changes in scope. The agent read the law behind them: 1 new rule
+(Medicaid remote monitoring for high-risk pregnancies, proposed from 2 entries citing the same
+press release), approved by a person and now live; 3 changes cite alerts on a site that forbids
+fetching and are shown as unreadable; 1 holds no rule. Cost: under 3 US cents.
+
 ## Limits you should know
 
 - **One state so far.** Florida, plus federal Medicare. More states are planned.

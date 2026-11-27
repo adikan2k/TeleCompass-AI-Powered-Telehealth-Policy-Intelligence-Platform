@@ -1,0 +1,41 @@
+{
+  "jurisdiction": "florida",
+  "diff_id": 1,
+  "compared": {
+    "from": {
+      "captured_at": "2026-05-21",
+      "origin": "wayback"
+    },
+    "to": {
+      "captured_at": "2026-11-27",
+      "origin": "live"
+    }
+  },
+  "entries_by_kind": {
+    "rechecked": 67,
+    "changed": 6,
+    "reworded": 8,
+    "added": 5
+  },
+  "real_changes_in_scope": 6,
+  "proposals_by_kind": {
+    "unreadable": 3,
+    "add": 2,
+    "no_rules": 1
+  },
+  "decided_by_a_person": {
+    "approved": 2,
+    "rejected": 0,
+    "reviewers": [
+      "Aditya Kanbargi"
+    ]
+  },
+  "applied": {
+    "rule_rows_approved": 2,
+    "distinct_rules_now_live": 1,
+    "rules_retired": 0
+  },
+  "model_calls": 3,
+  "cost_usd": 0.0247,
+  "written_at": "2026-11-27T08:24:16+00:00"
+}

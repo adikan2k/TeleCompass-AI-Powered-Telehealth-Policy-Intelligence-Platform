@@ -11,6 +11,7 @@ from typing import get_args
 from telecompass import (
     approve_app,
     change_agent,
+    change_report,
     config,
     copy_db,
     db,
@@ -164,6 +165,12 @@ def cmd_changes(args: argparse.Namespace) -> int:
         if diff_id is None:
             print(f"No diff for {args.jurisdiction} yet. Run: diff {args.jurisdiction}")
             return 1
+        if args.report:
+            path = change_report.write_report(
+                change_report.build_report(conn, diff_id, fetch.utc_now())
+            )
+            print(f"Wrote {path}")
+            return 0
         client, tracer = llm.OpenAIClient(), llm.LangfuseTracer()
 
         def gate(run_id: int) -> llm.ModelGate:
@@ -484,6 +491,11 @@ def build_parser() -> argparse.ArgumentParser:
     changes_cmd = commands.add_parser("changes", help="Propose rule changes from a diff.")
     changes_cmd.add_argument("jurisdiction", type=str.lower)
     changes_cmd.add_argument("--diff", type=int, help="Diff id. Default: the newest.")
+    changes_cmd.add_argument(
+        "--report",
+        action="store_true",
+        help="Write evals/results/changes_<state>.json for the diff instead of running the agent.",
+    )
     changes_cmd.set_defaults(run=cmd_changes)
 
     diff_cmd = commands.add_parser("diff", help="What changed between two snapshots.")

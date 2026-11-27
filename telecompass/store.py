@@ -63,41 +63,56 @@ def save_parse(
         ),
     ).fetchone()
     for position, entry in enumerate(parsed.entries):
-        conn.execute(
-            "INSERT INTO entry (parse_run_id, snapshot_id, jurisdiction, position, category, "
-            "topic, text, no_reference_found, source_name, source_url, accessed, last_updated) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                run["id"],
-                snapshot.id,
-                snapshot.jurisdiction,
-                position,
-                entry.category,
-                entry.topic,
-                entry.text,
-                entry.no_reference_found,
-                entry.source_name,
-                entry.source_url,
-                entry.accessed,
-                entry.last_updated,
-            ),
-        )
+        _insert_entry(conn, run["id"], snapshot, position, entry)
     for position, answer in enumerate(parsed.answers):
-        conn.execute(
-            "INSERT INTO glance_answer "
-            "(parse_run_id, snapshot_id, jurisdiction, position, question, answer) "
-            "VALUES (%s, %s, %s, %s, %s, %s)",
-            (
-                run["id"],
-                snapshot.id,
-                snapshot.jurisdiction,
-                position,
-                answer.question,
-                answer.answer,
-            ),
-        )
+        _insert_answer(conn, run["id"], snapshot, position, answer)
     conn.commit()
     return ParseRun.model_validate(run)
+
+
+def _insert_entry(
+    conn: Connection, run_id: int, snapshot: Snapshot, position: int, entry: Entry
+) -> None:
+    conn.execute(
+        "INSERT INTO entry (parse_run_id, snapshot_id, jurisdiction, position, category, topic, "
+        "subtopic, text, no_reference_found, source_name, source_url, source_links, accessed, "
+        "last_updated) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (
+            run_id,
+            snapshot.id,
+            snapshot.jurisdiction,
+            position,
+            entry.category,
+            entry.topic,
+            entry.subtopic,
+            entry.text,
+            entry.no_reference_found,
+            entry.source_name,
+            entry.source_url,
+            Jsonb([link.model_dump() for link in entry.source_links]),
+            entry.accessed,
+            entry.last_updated,
+        ),
+    )
+
+
+def _insert_answer(
+    conn: Connection, run_id: int, snapshot: Snapshot, position: int, answer: GlanceAnswer
+) -> None:
+    conn.execute(
+        "INSERT INTO glance_answer "
+        "(parse_run_id, snapshot_id, jurisdiction, position, section, question, answer) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+        (
+            run_id,
+            snapshot.id,
+            snapshot.jurisdiction,
+            position,
+            answer.section,
+            answer.question,
+            answer.answer,
+        ),
+    )
 
 
 def latest_parse_run(conn: Connection, snapshot_id: int) -> ParseRun | None:

@@ -30,19 +30,33 @@ class Snapshot(BaseModel):
 class GlanceAnswer(BaseModel):
     """One line of CCHP's "At a Glance" panel. Together they are the answer key."""
 
+    section: str
     question: str
     answer: str
 
 
+class SourceLink(BaseModel):
+    """One link inside a SOURCE line."""
+
+    label: str
+    url: str
+
+
 class Entry(BaseModel):
-    """One CCHP entry: a passage under a category and topic, ending in a SOURCE line."""
+    """One CCHP entry: a passage under a category and topic, ending in a SOURCE line.
+
+    source_name is the citation as CCHP wrote it. source_url is the first link in it, and
+    source_links holds every link, because one SOURCE line can cite several documents.
+    """
 
     category: str
     topic: str
+    subtopic: str | None = None
     text: str
     no_reference_found: bool = False
     source_name: str | None = None
     source_url: str | None = None
+    source_links: list[SourceLink] = []
     accessed: str | None = None
     last_updated: date | None = None
 

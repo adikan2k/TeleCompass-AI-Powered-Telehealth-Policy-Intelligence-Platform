@@ -1,0 +1,17 @@
+# What is NOT uploaded when the API is deployed to Cloud Run. Secrets and the site stay out.
+.gcloudignore
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.venv
+.claude
+web/
+tests/
+evals/
+docs/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/

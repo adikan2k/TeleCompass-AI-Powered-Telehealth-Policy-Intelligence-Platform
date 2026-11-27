@@ -23,19 +23,18 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D15 | Live site: FastAPI on Cloud Run over the same engine, Next.js in `web/` on Vercel, share links, daily request caps in the database, no free text and no model on the public path | 2026-11-27 | Logged |
 | D16 | Site design: a preflight checklist on a chart table; one signal colour for what changes; the date tape as the signature move; Anime.js, three.js, React Bits and Playwright used, other resources studied | 2026-11-27 | Asked for by Aditya, logged |
 | D17 | A person approves or rejects each rule on a local review page; the live site uses approved rules only; reviews are added rows, rules never change | 2026-11-27 | Chosen by Aditya, logged |
+| D18 | API on Cloud Run (us-east4) beside Neon; database address in Secret Manager; approved rules only; scales to zero for now | 2026-11-27 | Logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
 Open items:
 
 - The fetcher re-checks `robots.txt` at the start of every run, in case one appears.
-- Create the Neon project and move the database there before the site goes live in M4.
-  Confirmed by Aditya on 2026-11-26.
+- Switch the API to one warm instance before the link is shared widely (D18).
 - Human labels: none yet. The labelling page is ready (`python -m telecompass label florida`)
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
 - Four candidate official copies wait for a person to confirm them (D7).
-- Aditya reviews the 53 rules on the review page before launch (D17).
 
 ---
 
@@ -764,3 +763,27 @@ Approving inside the public site, which would need logins for one reviewer.
 
 **Trade-off.** A rule extracted in a later run needs its own review before the live site uses
 it. That is the point of rule 13; M5's review queue builds on this table.
+
+## D18. How the API is hosted
+
+**What.** The API runs on Google Cloud Run as the service `telecompass-api` in project
+`telecompass`, region `us-east4` (Virginia), next to the Neon database in AWS US East.
+
+- Built from the repository's `Dockerfile`; `.gcloudignore` keeps `.env`, the site, tests and
+  docs out of the upload.
+- The database address lives in Secret Manager as `neon-database-url` and reaches the service
+  as `DATABASE_URL`. It was piped there straight from `.env`, never shown, and checked by
+  comparing fingerprints. Only the service's runtime account may read that one secret.
+- `TELECOMPASS_REQUIRE_APPROVAL=1`: the live API uses approved rules only (D17).
+- Scales to zero, at most 2 instances, 512 MB, 30 second timeout. Chosen by Aditya: start free;
+  the first visit after a quiet spell waits a few seconds. Switch to one warm instance (a few
+  dollars a month) before the link is shared widely.
+- Every command names the project explicitly; the machine's default Google Cloud project was
+  left as it was.
+
+**Considered.** Keeping one instance warm from the start (the plan's wording); deferred to save
+cost until there are visitors. A region nearer Aditya; Virginia was chosen to sit beside Neon,
+since every answer makes several database reads.
+
+**Trade-off.** Public and without a login, as the site needs. The daily caps in the database
+(D15) and the instance cap bound both abuse and cost.

@@ -1,6 +1,6 @@
 {
   "jurisdiction": "florida",
-  "generated_at": "2026-11-27T05:25:07.346198+00:00",
+  "generated_at": "2026-11-27T05:37:55.932142+00:00",
   "not_legal_advice": "Not legal advice. Sources last fetched 2026-11-27.",
   "run": {
     "id": 1,
@@ -10,12 +10,12 @@
     "parse_run_id": 1
   },
   "cost": {
-    "model_calls": 24,
+    "model_calls": 93,
     "failed_calls": 0,
-    "input_tokens": 139113,
+    "input_tokens": 400415,
     "cached_tokens": 0,
-    "output_tokens": 20739,
-    "cost_usd": 0.555134
+    "output_tokens": 41043,
+    "cost_usd": 0.597806
   },
   "entries": {
     "in_scope": 47,
@@ -258,7 +258,7 @@
     },
     "matched": 8,
     "total": 10,
-    "caveat": "One state and at most ten lines: too few for an interval. 'agree_nothing_found' means CCHP says No and we found no rule, which is agreement by absence. Online prescribing has no answer-key line and is covered by the labels only."
+    "caveat": "One state and at most ten lines: too few for an interval. 'agree_nothing_found' means CCHP says No and we found no rule, which is agreement by absence. Online prescribing has no answer-key line; see the automated review and the labels."
   },
   "labels": {
     "sample_size": 30,
@@ -269,5 +269,593 @@
     "labellers": [],
     "items": [],
     "note": "Labels are written only by a person using the labelling page."
+  },
+  "automated_review": {
+    "kind": "automated",
+    "models": [
+      "gpt-6-luna"
+    ],
+    "distinct_rules": 69,
+    "reviewed": 69,
+    "right": 50,
+    "wrong": 19,
+    "cannot_tell": 0,
+    "by_rule_type": {
+      "private_payer_parity": {
+        "right": 3,
+        "wrong": 2,
+        "cannot_tell": 0
+      },
+      "medicaid_modality": {
+        "right": 6,
+        "wrong": 5,
+        "cannot_tell": 0
+      },
+      "cross_state_licensure": {
+        "right": 22,
+        "wrong": 3,
+        "cannot_tell": 0
+      },
+      "online_prescribing": {
+        "right": 19,
+        "wrong": 9,
+        "cannot_tell": 0
+      }
+    },
+    "items": [
+      {
+        "rule_id": 1,
+        "rule_type": "private_payer_parity",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears word for word, but the rule omits the source’s requirement that the contract establish mutually acceptable payment rates or methodologies for telehealth services."
+      },
+      {
+        "rule_id": 3,
+        "rule_type": "private_payer_parity",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states who must initial a payment-rate or methodology distinction and the contracts to which that requirement applies."
+      },
+      {
+        "rule_id": 4,
+        "rule_type": "private_payer_parity",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the source’s additional requirement that the contract establish mutually acceptable payment rates or methodologies for telehealth services."
+      },
+      {
+        "rule_id": 7,
+        "rule_type": "private_payer_parity",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source requires the contract to be voluntary between the HMO and the telehealth provider."
+      },
+      {
+        "rule_id": 10,
+        "rule_type": "private_payer_parity",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that the covered insurer-provider contract must be voluntary between both parties."
+      },
+      {
+        "rule_id": 20,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source says Florida Medicaid does not reimburse for telephone conversations."
+      },
+      {
+        "rule_id": 24,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that reimbursement requires interactive telecommunications equipment supporting real-time, two-way audio and video communication between the recipient and practitioner."
+      },
+      {
+        "rule_id": 25,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source requires providers to include modifier GT for services rendered in the fee-for-service delivery system."
+      },
+      {
+        "rule_id": 27,
+        "rule_type": "medicaid_modality",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the source’s requirement for two-way, real-time interactive communication using audio and video equipment."
+      },
+      {
+        "rule_id": 28,
+        "rule_type": "medicaid_modality",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule’s modality is listed as any while the source allows this training via telemedicine."
+      },
+      {
+        "rule_id": 29,
+        "rule_type": "medicaid_modality",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but it says the rule applies to providers who are enrolled or registered; it does not require all providers furnishing live-video services to be enrolled or registered."
+      },
+      {
+        "rule_id": 30,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source says practitioners providing the service must be licensed and act within their scope of practice."
+      },
+      {
+        "rule_id": 34,
+        "rule_type": "medicaid_modality",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the follow-up care required to qualify for continued coverage under subsection (4)."
+      },
+      {
+        "rule_id": 35,
+        "rule_type": "medicaid_modality",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule adds a remote-patient-monitoring modality that the source does not specify."
+      },
+      {
+        "rule_id": 36,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the follow-up requirement and its timing and conditions for continued coverage."
+      },
+      {
+        "rule_id": 37,
+        "rule_type": "medicaid_modality",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the follow-up requirement after the first 18 months, including the permitted modalities and assessment purpose."
+      },
+      {
+        "rule_id": 49,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately paraphrases the permission and conditions in subsection (4)(a)."
+      },
+      {
+        "rule_id": 50,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately summarizes the board’s or department’s duty to register a qualifying out-of-state professional and the listed requirements."
+      },
+      {
+        "rule_id": 51,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and it requires a registered out-of-state telehealth provider’s website to prominently link to the department’s website containing the information required under paragraph (h)."
+      },
+      {
+        "rule_id": 52,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that a professional may not register if their license is subject to a pending disciplinary investigation or action or has been revoked in any state or jurisdiction."
+      },
+      {
+        "rule_id": 53,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately captures the notification duty and five-business-day deadline for a health care professional registered under this subsection."
+      },
+      {
+        "rule_id": 54,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and paragraph (4)(e) requires a provider registered under that subsection to maintain coverage for telehealth services to patients outside the provider’s home state at or above the applicable listed requirements."
+      },
+      {
+        "rule_id": 55,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and subsection (4) bars a health care professional registered under it from opening an office in this state, matching the rule’s restriction on registered out-of-state telehealth providers in Florida."
+      },
+      {
+        "rule_id": 56,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the ban on in-person services for a health care professional registered under subsection (4), with “Florida” meaning “this state.”"
+      },
+      {
+        "rule_id": 57,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the restriction on registered pharmacists dispensing to patients in Florida through the listed pharmacy or outsourcing-facility options."
+      },
+      {
+        "rule_id": 58,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately states the exemption for an out-of-state-licensed professional providing telehealth to a Florida patient in response to a qualifying emergency."
+      },
+      {
+        "rule_id": 59,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately states the consultation-based exception for an out-of-state-licensed professional serving a patient in Florida without the state registration requirement."
+      },
+      {
+        "rule_id": 60,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately summarizes eligibility for an out-of-state telehealth provider registration number when the listed requirements are met."
+      },
+      {
+        "rule_id": 61,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source says Florida licensees can provide telehealth to Florida patients they can treat in person while the registration is for practitioners licensed outside Florida only."
+      },
+      {
+        "rule_id": 62,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source lists submitting the completed application as a requirement for out-of-state telehealth registration."
+      },
+      {
+        "rule_id": 63,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source lists an active, unencumbered out-of-state license with verification as a requirement for out-of-state telehealth registration."
+      },
+      {
+        "rule_id": 64,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word in the source, and it states a requirement for out-of-state telehealth registration applicants to have no such pending matter on their license within the last five years."
+      },
+      {
+        "rule_id": 65,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quoted requirement appears verbatim, and the source lists designation of a Florida registered agent as a condition for out-of-state telehealth provider registration."
+      },
+      {
+        "rule_id": 66,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the liability coverage requirement for out-of-state telehealth registration."
+      },
+      {
+        "rule_id": 67,
+        "rule_type": "cross_state_licensure",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source also requires out-of-state telehealth applicants not to provide in-person health care services to Florida patients."
+      },
+      {
+        "rule_id": 69,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the source lists this as a requirement for out-of-state telehealth registration, applying to pharmacists only."
+      },
+      {
+        "rule_id": 70,
+        "rule_type": "cross_state_licensure",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but it says a currently licensed veterinarian may practice telehealth, not that holding such a license is an exclusive requirement for anyone who practices it."
+      },
+      {
+        "rule_id": 71,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately paraphrases the Board’s jurisdiction regardless of the veterinarian’s physical office location."
+      },
+      {
+        "rule_id": 72,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source deems the practice to occur when the veterinarian, the patient, or both are in Florida while the veterinarian practices veterinary telehealth."
+      },
+      {
+        "rule_id": 74,
+        "rule_type": "cross_state_licensure",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source only lists Florida as a member state and does not establish that membership allows cross-state licensure or applies to the specified profession, payer, or modality."
+      },
+      {
+        "rule_id": 77,
+        "rule_type": "cross_state_licensure",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the source lists Florida under Non-Members of the PT Compact."
+      },
+      {
+        "rule_id": 78,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears word for word, but the source concerns evaluations before providing telehealth services, not a rule specifically allowing online prescribing."
+      },
+      {
+        "rule_id": 79,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the prohibition and all four statutory exceptions."
+      },
+      {
+        "rule_id": 80,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source exempts prescriptions for psychiatric-disorder treatment from the prohibition on prescribing Schedule II controlled substances by telehealth."
+      },
+      {
+        "rule_id": 81,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source’s exception to the Schedule II prescribing prohibition covers inpatient treatment at a chapter 395 hospital."
+      },
+      {
+        "rule_id": 82,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the source makes hospice treatment an exception to the prohibition on prescribing Schedule II controlled substances by telehealth, as the rule states."
+      },
+      {
+        "rule_id": 83,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and it makes treatment of a nursing home resident an exception to the prohibition on prescribing Schedule II controlled substances by telehealth."
+      },
+      {
+        "rule_id": 84,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source bars physicians from using telehealth to perform abortions, expressly including medical abortions, which matches the rule’s stated restriction on medication abortions."
+      },
+      {
+        "rule_id": 85,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that medications intended for medical abortion must be dispensed in person by a physician."
+      },
+      {
+        "rule_id": 86,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the requirement that these medications be dispensed in person by a physician."
+      },
+      {
+        "rule_id": 88,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quoted clause appears verbatim and bars a veterinarian from practicing veterinary telehealth, including prescribing through it, outside a veterinarian/client/patient relationship."
+      },
+      {
+        "rule_id": 89,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately states that a synchronous audiovisual initial evaluation may establish the veterinarian/client/patient relationship."
+      },
+      {
+        "rule_id": 90,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source restricts these methods for any initial telehealth evaluation to establish the relationship, not only one needed for telehealth prescribing."
+      },
+      {
+        "rule_id": 91,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the requirement that an initial evaluation to establish the relationship use synchronous, audiovisual communication."
+      },
+      {
+        "rule_id": 92,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source also requires compliance with the additional requirements that follow, which the rule leaves out."
+      },
+      {
+        "rule_id": 93,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the rule omits the source’s limits on prescription duration and renewal for prescriptions based solely on a telehealth evaluation."
+      },
+      {
+        "rule_id": 94,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source limits this permission to a veterinarian practicing veterinary telehealth, while the rule states it broadly for any veterinarian."
+      },
+      {
+        "rule_id": 96,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the source’s renewal restriction is limited to prescriptions issued by a veterinarian practicing veterinary telehealth for specified animal drugs, while the rule states it generally."
+      },
+      {
+        "rule_id": 97,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the telehealth prescribing restriction and its examination-or-visit condition."
+      },
+      {
+        "rule_id": 98,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately states the telehealth restriction and its alternatives for prescribing a controlled substance."
+      },
+      {
+        "rule_id": 99,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the telehealth prescribing prohibition for the specified horses."
+      },
+      {
+        "rule_id": 100,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quoted text appears verbatim in the source, and it requires a qualified physician to examine the patient and fully assess the patient’s medical history before issuing a physician certification."
+      },
+      {
+        "rule_id": 101,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source requires the qualified physician to conduct an in-person physical examination before an initial certification, defining that examination as one with physician and patient in the same room."
+      },
+      {
+        "rule_id": 102,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quoted sentence appears verbatim, and the rule accurately states that a qualified physician may conduct renewal examinations by telehealth when that physician previously issued the patient a certification after an in-person physical examination."
+      },
+      {
+        "rule_id": 103,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the evaluation requirement and its timing for an existing qualified patient."
+      },
+      {
+        "rule_id": 104,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that a qualified physician may conduct the evaluation by telehealth if that physician previously issued the patient’s certification after an in-person physical examination."
+      },
+      {
+        "rule_id": 105,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source requires the physician to make this determination during the evaluation before issuing a new certification."
+      },
+      {
+        "rule_id": 106,
+        "rule_type": "online_prescribing",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the required findings and documentation during the evaluation before a new physician certification."
+      },
+      {
+        "rule_id": 107,
+        "rule_type": "online_prescribing",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears verbatim, but the omitted context does not establish that the reporting duty is imposed on a physician or that it concerns recertification."
+      }
+    ],
+    "note": "A second model, different from the one that wrote the rules, checked each distinct rule against the stored law. This is an automated check, not a human review."
   }
 }

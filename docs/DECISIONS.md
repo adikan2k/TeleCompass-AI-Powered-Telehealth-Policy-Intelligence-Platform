@@ -496,3 +496,10 @@ where labelling everything by hand was never possible.
 **Trade-off.** A model review is weaker evidence than a person reading the law, and a smaller
 model can be wrong in both directions. The plan's M2 asked for 30 human labels. That part is
 not met: the results file says 0 of 30, and the labelling page stays ready.
+
+**Follow-up, 2026-11-27: the first review.** 69 distinct rules reviewed for 0.04 US dollars:
+50 judged right and 19 judged wrong. In all 19 the quote was found in the source; the reviewer
+objected that the rule left out a condition stated beside the quote, or was worded more broadly
+than the source. Several of the 19 are rules about veterinary telehealth, which CCHP lists
+under online prescribing but which do not concern a human visit. Both points are inputs for
+the next extraction pass and for the rules engine in M3.

@@ -14,10 +14,17 @@ TABLES = [
     "entry",
     "glance_answer",
     "source_text",
+    "diff_run",
+    "entry_change",
+    "source_change",
     "extraction_run",
     "model_call",
     "extraction_item",
     "rule",
+    "change_proposal",
+    "change_decision",
+    "rule_retirement",
+    "override_confirmation",
     "label_sample",
     "label",
     "auto_review",
@@ -25,6 +32,10 @@ TABLES = [
     "decision",
     "rate_counter",
 ]
+
+# LangGraph keeps its own checkpoint tables in the same database. They hold the paused state of
+# a change review, which belongs to the database it was made in, so they are not copied.
+CHECKPOINT_PREFIX = "checkpoint"
 
 
 class TargetNotEmpty(RuntimeError):

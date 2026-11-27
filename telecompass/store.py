@@ -34,24 +34,53 @@ def last_request_at(conn: Connection, host: str) -> datetime | None:
     return row["at"] if row else None
 
 
-def save_snapshot(conn: Connection, jurisdiction: str, page: FetchedPage) -> Snapshot:
-    """Store a fetched page as a new snapshot row."""
+def save_snapshot(
+    conn: Connection,
+    jurisdiction: str,
+    page: FetchedPage,
+    origin: str = "live",
+    captured_at: datetime | None = None,
+) -> Snapshot:
+    """Store a fetched page as a new snapshot row.
+
+    `captured_at` is the moment the content represents: the fetch time for our own fetches,
+    the Archive's capture time for a copy from the Internet Archive.
+    """
     row = conn.execute(
-        "INSERT INTO snapshot (jurisdiction, url, fetched_at, sha256, http_status, raw_page) "
-        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING *",
-        (jurisdiction, page.url, page.fetched_at, page.sha256, page.status, page.body),
+        "INSERT INTO snapshot "
+        "(jurisdiction, url, fetched_at, sha256, http_status, raw_page, origin, captured_at) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+        (
+            jurisdiction,
+            page.url,
+            page.fetched_at,
+            page.sha256,
+            page.status,
+            page.body,
+            origin,
+            captured_at or page.fetched_at,
+        ),
     ).fetchone()
     conn.commit()
     return Snapshot.model_validate(row)
 
 
 def latest_snapshot(conn: Connection, jurisdiction: str) -> Snapshot | None:
-    """The newest snapshot for a jurisdiction, or None."""
+    """The snapshot whose content is newest for a jurisdiction, or None."""
     row = conn.execute(
-        "SELECT * FROM snapshot WHERE jurisdiction = %s ORDER BY fetched_at DESC, id DESC LIMIT 1",
+        "SELECT * FROM snapshot WHERE jurisdiction = %s ORDER BY captured_at DESC, id DESC LIMIT 1",
         (jurisdiction,),
     ).fetchone()
     return Snapshot.model_validate(row) if row else None
+
+
+def snapshots_for(conn: Connection, jurisdiction: str) -> list[Snapshot]:
+    """Every snapshot of a jurisdiction, oldest content first."""
+    rows = conn.execute(
+        "SELECT * FROM snapshot WHERE jurisdiction = %s ORDER BY captured_at, id",
+        (jurisdiction,),
+    ).fetchall()
+    return [Snapshot.model_validate(row) for row in rows]
 
 
 def save_parse(

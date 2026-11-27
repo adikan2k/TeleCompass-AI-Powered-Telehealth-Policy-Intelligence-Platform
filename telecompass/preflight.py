@@ -38,23 +38,34 @@ def demo_visit(on: date) -> Visit:
 
 
 def rules_for(conn: Connection, jurisdiction: str) -> list[Rule]:
-    """The distinct rules of a jurisdiction's newest extraction run that may be used.
+    """The rules of a jurisdiction that may be used: the live rule set.
 
-    A rule a person rejected is never used. Where approval is required (the live site, rule 13),
-    only rules a person approved are used. Each rule carries the second model's verdict and,
-    once approved, the status "approved".
+    The base is the newest full extraction run. Rules from later change runs join it only once a
+    person approves them. A rule a person rejected or retired is never used. Where approval is
+    required (the live site, rule 13), only approved rules are used. Each rule carries the second
+    model's verdict and, once approved, the status "approved".
     """
     run = rule_store.latest_run(conn, jurisdiction)
     if run is None:
         return []
     automated = rule_store.latest_reviews(conn, run["id"])
-    rules = distinct_quoted_rules(rule_store.rules_for(conn, run["id"]))
-    human = rule_store.latest_rule_reviews(conn, [rule.id for rule in rules])
+    base = distinct_quoted_rules(rule_store.rules_for(conn, run["id"]))
+    later = [
+        rule
+        for change_run in rule_store.change_runs_after(conn, jurisdiction, run["id"])
+        for rule in rule_store.rules_for(conn, change_run["id"])
+        if rule.quote_verified and rule.quote and rule.effect != "silent"
+    ]
+    human = rule_store.latest_rule_reviews(conn, [rule.id for rule in (*base, *later)])
+    retired = rule_store.retired_rule_ids(conn)
     only_approved = config.require_approval()
     usable = []
-    for rule in rules:
+    for rule in base + later:
         decision = human.get(rule.id, {}).get("decision")
-        if decision == "rejected" or (only_approved and decision != "approved"):
+        from_change = rule.extraction_run_id != run["id"]
+        if rule.id in retired or decision == "rejected":
+            continue
+        if (only_approved or from_change) and decision != "approved":
             continue
         update = {"auto_review": automated.get(rule.id, {}).get("verdict")}
         if decision == "approved":

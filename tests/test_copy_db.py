@@ -54,4 +54,6 @@ def test_every_table_with_data_is_on_the_copy_list(conn: Connection) -> None:
     rows = conn.execute(
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
     ).fetchall()
-    assert {row["table_name"] for row in rows} - {"schema_migration"} == set(copy_db.TABLES)
+    names = {row["table_name"] for row in rows} - {"schema_migration"}
+    names = {name for name in names if not name.startswith(copy_db.CHECKPOINT_PREFIX)}
+    assert names == set(copy_db.TABLES)

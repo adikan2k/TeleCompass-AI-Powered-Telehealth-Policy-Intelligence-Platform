@@ -8,6 +8,7 @@ import io
 import re
 import struct
 import tomllib
+from datetime import datetime
 from importlib import resources
 from urllib.parse import urljoin, urlsplit
 
@@ -52,13 +53,53 @@ class Override(BaseModel):
     confirmed_on: str = ""
 
 
-def load_overrides(text: str | None = None) -> dict[str, Override]:
-    """Confirmed overrides by cited link. Unconfirmed ones are left out."""
+def candidate_overrides(text: str | None = None) -> list[Override]:
+    """Every listed official copy, confirmed or not, as written in the file."""
     if text is None:
         path = resources.files("telecompass") / "data" / "source_overrides.toml"
         text = path.read_text(encoding="utf-8")
-    rows = [Override.model_validate(row) for row in tomllib.loads(text).get("override", [])]
-    return {row.cited_url: row for row in rows if row.confirmed_by.strip()}
+    return [Override.model_validate(row) for row in tomllib.loads(text).get("override", [])]
+
+
+def confirmations(conn: Connection) -> dict[tuple[str, str], dict]:
+    """The newest confirmation of each (cited, official) pair made on the review page."""
+    rows = conn.execute(
+        "SELECT DISTINCT ON (cited_url, official_url) cited_url, official_url, confirmed_by, "
+        "confirmed_at FROM override_confirmation ORDER BY cited_url, official_url, id DESC"
+    ).fetchall()
+    return {(row["cited_url"], row["official_url"]): row for row in rows}
+
+
+def load_overrides(text: str | None = None, conn: Connection | None = None) -> dict[str, Override]:
+    """Confirmed overrides by cited link. Unconfirmed ones are left out.
+
+    A listed official copy is confirmed when the file names who confirmed it, or when a person
+    confirmed that exact pair on the review page.
+    """
+    confirmed_here = confirmations(conn) if conn is not None else {}
+    found: dict[str, Override] = {}
+    for row in candidate_overrides(text):
+        here = confirmed_here.get((row.cited_url, row.official_url))
+        if here is not None:
+            row = row.model_copy(
+                update={
+                    "confirmed_by": here["confirmed_by"],
+                    "confirmed_on": f"{here['confirmed_at']:%Y-%m-%d}",
+                }
+            )
+        if row.confirmed_by.strip():
+            found[row.cited_url] = row
+    return found
+
+
+def confirm_override(conn: Connection, override: Override, person: str, at: datetime) -> None:
+    """Record a person's confirmation that an official copy is the cited document."""
+    conn.execute(
+        "INSERT INTO override_confirmation (cited_url, official_url, confirmed_by, confirmed_at) "
+        "VALUES (%s, %s, %s, %s)",
+        (override.cited_url, override.official_url, person, at),
+    )
+    conn.commit()
 
 
 def html_to_text(html: str) -> str:

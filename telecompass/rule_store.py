@@ -18,30 +18,48 @@ def start_run(
     cap: Decimal,
     at: datetime,
     prompt_version: str = "v1",
+    kind: str = "full",
+    diff_run_id: int | None = None,
 ) -> int:
     row = conn.execute(
         "INSERT INTO extraction_run "
-        "(jurisdiction, parse_run_id, model, cap_usd, started_at, prompt_version) "
-        "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-        (jurisdiction, parse_run_id, model, cap, at, prompt_version),
+        "(jurisdiction, parse_run_id, model, cap_usd, started_at, prompt_version, kind, "
+        "diff_run_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+        (jurisdiction, parse_run_id, model, cap, at, prompt_version, kind, diff_run_id),
     ).fetchone()
     conn.commit()
     return row["id"]
 
 
 def runs_for(conn: Connection, jurisdiction: str) -> list[dict[str, Any]]:
-    """Every extraction run for a jurisdiction, oldest first."""
+    """Every full extraction run for a jurisdiction, oldest first."""
     return conn.execute(
-        "SELECT * FROM extraction_run WHERE jurisdiction = %s ORDER BY id", (jurisdiction,)
+        "SELECT * FROM extraction_run WHERE jurisdiction = %s AND kind = 'full' ORDER BY id",
+        (jurisdiction,),
     ).fetchall()
 
 
 def latest_run(conn: Connection, jurisdiction: str) -> dict[str, Any] | None:
-    """The newest extraction run for a jurisdiction, or None."""
+    """The newest full extraction run for a jurisdiction, or None. Change runs are not counted."""
     return conn.execute(
-        "SELECT * FROM extraction_run WHERE jurisdiction = %s ORDER BY id DESC LIMIT 1",
+        "SELECT * FROM extraction_run WHERE jurisdiction = %s AND kind = 'full' "
+        "ORDER BY id DESC LIMIT 1",
         (jurisdiction,),
     ).fetchone()
+
+
+def change_runs_after(conn: Connection, jurisdiction: str, run_id: int) -> list[dict[str, Any]]:
+    """Change runs made after a full run, oldest first."""
+    return conn.execute(
+        "SELECT * FROM extraction_run WHERE jurisdiction = %s AND kind = 'change' AND id > %s "
+        "ORDER BY id",
+        (jurisdiction, run_id),
+    ).fetchall()
+
+
+def retired_rule_ids(conn: Connection) -> set[int]:
+    """Every rule a person has retired."""
+    return {row["rule_id"] for row in conn.execute("SELECT rule_id FROM rule_retirement")}
 
 
 def save_item(

@@ -13,6 +13,7 @@ from telecompass import (
     config,
     copy_db,
     db,
+    diff,
     engine,
     extract,
     fetch,
@@ -27,6 +28,7 @@ from telecompass import (
     show,
     sources,
     store,
+    wayback,
 )
 
 
@@ -70,6 +72,69 @@ def cmd_parse(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_wayback(args: argparse.Namespace) -> int:
+    """List, or store and parse, older copies of a state's CCHP page from the Internet Archive."""
+    url = fetch.CCHP_STATE_URLS.get(args.jurisdiction)
+    if url is None:
+        print(f"Unknown jurisdiction '{args.jurisdiction}'.", file=sys.stderr)
+        return 1
+    with _open_database() as conn, fetch.new_client() as client:
+        fetcher = fetch.Fetcher(conn, client)
+        if not args.at:
+            for capture in wayback.list_captures(fetcher, url, args.since, args.until):
+                print(f"  {capture.timestamp}  {capture.captured_at:%Y-%m-%d}")
+            return 0
+        snapshot = wayback.store_capture(conn, fetcher, args.jurisdiction, url, args.at)
+        parsed = parse_cchp.parse_state_page(snapshot.raw_page)
+        run = store.save_parse(conn, snapshot, parsed, parse_cchp.PARSER_VERSION, fetch.utc_now())
+    print(
+        f"Stored the Archive's copy of {snapshot.captured_at:%Y-%m-%d} as snapshot {snapshot.id}."
+    )
+    print(f"  parse run {run.id}: {run.entry_count} entries, {run.answer_count} answers")
+    for note in run.problems:
+        print(f"  - {note}")
+    return 0
+
+
+def _latest_run_of(conn: db.Connection, snapshot_id: int) -> int | None:
+    run = store.latest_parse_run(conn, snapshot_id)
+    return run.id if run else None
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    """Compare the two newest snapshots of a jurisdiction, or two chosen ones; store the diff."""
+    with _open_database() as conn:
+        snapshots = store.snapshots_for(conn, args.jurisdiction)
+        by_id = {snapshot.id: snapshot for snapshot in snapshots}
+        if args.old and args.new:
+            pair = [by_id.get(args.old), by_id.get(args.new)]
+        else:
+            pair = snapshots[-2:] if len(snapshots) >= 2 else [None, None]
+        if any(snapshot is None for snapshot in pair):
+            print("Two parsed snapshots are needed. Fetch a new one, or store an older copy.")
+            return 1
+        old, new = pair
+        old_run, new_run = _latest_run_of(conn, old.id), _latest_run_of(conn, new.id)
+        if old_run is None or new_run is None:
+            print("Both snapshots must be parsed first.")
+            return 1
+        diff_id, changes = diff.save_diff(
+            conn, args.jurisdiction, old_run, new_run, fetch.utc_now()
+        )
+    counts = Counter(change.kind for change in changes)
+    scoped = [c for c in changes if c.rule_type and c.kind in diff.SUBSTANTIVE]
+    print(
+        f"Diff {diff_id}: {args.jurisdiction}, {old.captured_at:%Y-%m-%d} ({old.origin}) "
+        f"to {new.captured_at:%Y-%m-%d} ({new.origin})"
+    )
+    print(f"  {dict(counts)}; {len(scoped)} in the five rule types")
+    for change in scoped:
+        place = " / ".join(p for p in (change.category, change.topic, change.subtopic) if p)
+        what = f" ({', '.join(change.fields)})" if change.fields else ""
+        print(f"  [{change.kind}] {place}{what}")
+    return 0
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     """Print the answer key and a short excerpt of every entry."""
     with _open_database() as conn:
@@ -109,7 +174,7 @@ def cmd_sources(args: argparse.Namespace) -> int:
             conn,
             fetch.Fetcher(conn, client),
             urls,
-            sources.load_overrides(),
+            sources.load_overrides(conn=conn),
             args.retry,
             args.reread,
         )
@@ -333,6 +398,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     copy_cmd.add_argument("--check", action="store_true", help="Only connect and migrate.")
     copy_cmd.set_defaults(run=cmd_copy_db)
+
+    wb = commands.add_parser("wayback", help="Older copies of a CCHP page from the Archive.")
+    wb.add_argument("jurisdiction", type=str.lower)
+    wb.add_argument("--at", help="Capture time to store, YYYYMMDDhhmmss. Without it, list.")
+    wb.add_argument("--since", default="2025")
+    wb.add_argument("--until", default="2026")
+    wb.set_defaults(run=cmd_wayback)
+
+    diff_cmd = commands.add_parser("diff", help="What changed between two snapshots.")
+    diff_cmd.add_argument("jurisdiction", type=str.lower)
+    diff_cmd.add_argument("--old", type=int, help="Older snapshot id.")
+    diff_cmd.add_argument("--new", type=int, help="Newer snapshot id.")
+    diff_cmd.set_defaults(run=cmd_diff)
 
     pointers_cmd = commands.add_parser("pointers", help="Store our pointers to official pages.")
     pointers_cmd.add_argument("jurisdiction", type=str.lower)

@@ -27,6 +27,8 @@ class Snapshot(BaseModel):
     sha256: str
     http_status: int
     raw_page: str
+    origin: str = "live"
+    captured_at: datetime | None = None
 
 
 class GlanceAnswer(BaseModel):

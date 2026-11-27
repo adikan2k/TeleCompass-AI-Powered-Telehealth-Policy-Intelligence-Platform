@@ -18,6 +18,7 @@ The decisions that mattered, newest last. Details are in the entries below.
 | D10 | Grade: plain Python turns rules into yes or no for the 10 answer-key lines that the five rule types cover, and writes `evals/results/extraction_florida.json` | 2026-11-26 | Approved by Aditya |
 | D11 | Labelling screen: a local FastAPI page that shows Aditya 30 rules, one at a time, beside the source text, without the grade or the quote-check result | 2026-11-26 | Approved by Aditya |
 | D12 | Automated review: a second model (`gpt-6-luna`) checks each distinct rule against the stored law. Reported apart from human labels, which stay at 0 of 30 for now | 2026-11-27 | Chosen by Aditya, logged |
+| D13 | Rules engine in plain Python decides each line of a visit from quote-checked rules; federal Medicare rules come from the CMS Telehealth FAQ through the same pipeline | 2026-11-27 | Logged |
 
 From D12 on, decisions are logged here and not approved one by one (rule 2 in `CLAUDE.md`).
 
@@ -30,6 +31,8 @@ Open items:
   whenever a person wants to check the 30 sampled rules. Until then the results file says
   0 of 30 and nothing may present the automated review as a human one.
 - Four candidate official copies wait for a person to confirm them (D7).
+- All rules are still `draft`. A person must approve rules before the site goes live in M4
+  (rule 13).
 
 ---
 
@@ -523,3 +526,68 @@ The veterinary rules are gone and fewer rules drop a condition. The nine still f
 mostly cases where the law states two requirements in one sentence and the rule covers one of
 them. No further pass was made: tuning the instructions until the reviewing model stops
 objecting would be fitting to the reviewer, not improving the rules.
+
+## D13. The rules engine and the federal Medicare rules
+
+**What.** `python -m telecompass preflight` takes a visit and a date and answers line by line:
+cross-state licensure, Medicaid payment for the modality, consent, prescribing, private plan
+duties, and four federal Medicare lines. Each line is one of: allowed, allowed with conditions,
+not allowed, silent, or does not apply. Each shows the rules behind it with the exact words of
+the law, the source link, the fetch date, and what would make a refused visit allowed.
+
+How it decides:
+
+- It is plain typed Python in `engine.py`. No model is called. The same visit and the same
+  rules always give the same answer, and a test checks that.
+- It uses only rules whose quote was found word for word in the stored law. Unverified rules
+  and "silent" markers are never used. Where no rule speaks, the line says silent.
+- A rule that names another profession or another service than the visit's is left out.
+- For prescribing, the engine reads what a rule is about (Schedule II, other controlled drugs,
+  abortion medication, medical marijuana) from the rule's own words by pattern matching. A ban
+  with stated exceptions gives "allowed with conditions" and lists the exceptions. The engine
+  does not judge whether an exception fits the patient; that is a clinical fact.
+- A rule applies on a date if the date falls between its start and end. A rule with no stated
+  start is treated as in force on any date, and the printout says so. This is why only the
+  dated rules, mostly federal, change when the date changes.
+- Every decision is stored in a `decision` table with the visit, the answer and the ids of the
+  rules it rests on. A visit has no field for a name or a date of birth (rule 17).
+
+The federal Medicare rules:
+
+- CCHP's state pages do not map federal Medicare, so the map is a short hand-written file,
+  `telecompass/data/federal_pointers.toml`. Each pointer says what to look for, in our own
+  words, and names the official page. It states no law itself.
+- The page is the CMS Telehealth FAQ (updated October 2026). It is fetched, read into rules,
+  quote-checked and reviewed by the same pipeline as a state entry.
+- Result: 17 dated rules, every quote found word for word, 13 of 14 distinct rules judged
+  right by the automated review. Cost 0.10 US dollars.
+- On the plan's example visit, moving the date from December 2026 to March 2028 changes two
+  Medicare lines: the in-person visit requirement for mental health comes into force, and the
+  wider list of eligible practitioners ends.
+
+**Why.** Rule 9: a model may read text into rules, but only code may decide a visit. Keeping
+the federal source in the same pipeline means its rules carry quotes, dates and a review like
+every other rule, with no special path.
+
+**Considered.**
+
+- Using `telehealth.hhs.gov` as the federal source. Its pages state the dates most plainly, but
+  the site refuses requests from anything that is not a browser. It was left alone.
+- Having the model tag each prescribing rule with the drug class. Pattern matching on the
+  rule's own words needs no new model run and can be tested; it may need the model's help when
+  more states are added in M6.
+- An overall "go or no go" verdict for the visit. Left out: the lines answer different
+  questions, and one word would hide which of them failed.
+
+**Trade-offs and limits.**
+
+- The rules are all still `draft`: no person has approved them (rule 13). The printout marks
+  every rule as "draft, not yet approved by a person". This must be settled before the site
+  goes live in M4.
+- State rules rarely state a start date, so the engine cannot say what state law was on a past
+  date. It says what the law as fetched says.
+- CMS puts the update date in the FAQ's file name, so the pointer must be updated when CMS
+  next revises the FAQ.
+- The CMS FAQ's PDF text had a font fault: "effective" came out as "ePective". A repair for
+  that was added to the PDF reader. It runs only when a document has no "ff" at all, so it
+  cannot alter a healthy document, and it is tested.

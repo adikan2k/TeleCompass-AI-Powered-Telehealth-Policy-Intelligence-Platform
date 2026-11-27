@@ -1,0 +1,237 @@
+{
+  "jurisdiction": "federal",
+  "generated_at": "2026-11-27T06:11:31.671132+00:00",
+  "not_legal_advice": "Not legal advice. Sources last fetched 2026-11-27.",
+  "run": {
+    "id": 4,
+    "model": "gpt-6.2-sol",
+    "prompt_version": "v4",
+    "started_at": "2026-11-27T06:08:01.941644+00:00",
+    "cap_usd": 5.0,
+    "parse_run_id": 2
+  },
+  "cost": {
+    "model_calls": 18,
+    "failed_calls": 0,
+    "input_tokens": 71377,
+    "cached_tokens": 15849,
+    "output_tokens": 10793,
+    "cost_usd": 0.096845
+  },
+  "entries": {
+    "in_scope": 4,
+    "by_outcome": {
+      "rules": 4
+    },
+    "sources_cut_to_fit": 0,
+    "without_rules": []
+  },
+  "rules": {
+    "total": 17,
+    "silent": 0,
+    "by_status": {
+      "draft": 17
+    },
+    "by_rule_type": {
+      "medicare_telehealth": 17
+    },
+    "quote_check": {
+      "checked": 17,
+      "passed": 17,
+      "pass_rate": 1.0
+    }
+  },
+  "answer_key": {
+    "lines": [],
+    "counts": {
+      "agree": 0,
+      "agree_nothing_found": 0,
+      "miss": 0,
+      "wrong": 0
+    },
+    "matched": 0,
+    "total": 0,
+    "caveat": "One state and at most ten lines: too few for an interval. 'agree_nothing_found' means CCHP says No and we found no rule, which is agreement by absence. Online prescribing has no answer-key line; see the automated review and the labels."
+  },
+  "labels": {
+    "sample_size": 0,
+    "labelled": 0,
+    "right": 0,
+    "wrong": 0,
+    "cannot_tell": 0,
+    "labellers": [],
+    "items": [],
+    "note": "Labels are written only by a person using the labelling page."
+  },
+  "automated_review": {
+    "kind": "automated",
+    "models": [
+      "gpt-6-luna"
+    ],
+    "distinct_rules": 14,
+    "reviewed": 14,
+    "right": 13,
+    "wrong": 1,
+    "cannot_tell": 0,
+    "by_rule_type": {
+      "medicare_telehealth": {
+        "right": 13,
+        "wrong": 1,
+        "cannot_tell": 0
+      }
+    },
+    "items": [
+      {
+        "rule_id": 202,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that beneficiaries may receive Medicare telehealth services anywhere in the United States and its territories through December 31, 2027."
+      },
+      {
+        "rule_id": 203,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word, and the rule accurately restates the general facility and rural-area requirements beginning January 1, 2028, except for behavioral health services."
+      },
+      {
+        "rule_id": 204,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source says beneficiaries in rural and urban areas may receive behavioral health telehealth services at home without geographic or place-of-service restrictions, with the question specifying SUD services. "
+      },
+      {
+        "rule_id": 205,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the source says the home and any geographic location may serve as an originating site for beneficiaries receiving these RHC or FQHC telecommunications services."
+      },
+      {
+        "rule_id": 206,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately captures the applicable ACO eligibility, beneficiary assignment, billing, and telehealth flexibilities described there."
+      },
+      {
+        "rule_id": 207,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears in the source, and the rule accurately states that beneficiaries may receive audio-only telehealth services in their homes through December 31, 2027."
+      },
+      {
+        "rule_id": 208,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears in the source, and the rule accurately captures the audio-only option, its conditions, and its availability to new and established patients."
+      },
+      {
+        "rule_id": 209,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears word for word in the source, and the rule accurately states that beneficiaries may receive those defined remote mental health services via audio-only when furnished by hospital-employed staff in their homes."
+      },
+      {
+        "rule_id": 210,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states the six-month prerequisite, its effective date, the qualifying in-person service and provider conditions, and the exception for beneficiaries who began receiving mental health telehealth at home before January 1, 2028."
+      },
+      {
+        "rule_id": 211,
+        "rule_type": "medicare_telehealth",
+        "verdict": "wrong",
+        "quote_in_source": true,
+        "rule_matches_source": false,
+        "reason": "The quote appears in the source, but the rule omits the separate transition for patients who began home mental health telehealth before January 1, 2028, whom the source says are established and instead need at least one in-person visit every 12 months after December 31, 2027."
+      },
+      {
+        "rule_id": 212,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim in the source, and the rule accurately states the established-patient exception and recurring in-person visit requirement, including the stated exceptions and substitute practitioner condition."
+      },
+      {
+        "rule_id": 213,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately captures that these visits remain exempt through at least December 31, 2027, without claiming when the requirement may begin."
+      },
+      {
+        "rule_id": 214,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears verbatim, and the rule accurately states that an extended range of practitioners may bill for Medicare telehealth services through December 31, 2027."
+      },
+      {
+        "rule_id": 215,
+        "rule_type": "medicare_telehealth",
+        "verdict": "right",
+        "quote_in_source": true,
+        "rule_matches_source": true,
+        "reason": "The quote appears in the source, and it says physical therapists can no longer furnish Medicare telehealth services starting January 1, 2028."
+      }
+    ],
+    "note": "A second model, different from the one that wrote the rules, checked each distinct rule against the stored law. This is an automated check, not a human review."
+  },
+  "runs": [
+    {
+      "run_id": 3,
+      "started_at": "2026-11-27T06:04:34.668320+00:00",
+      "model": "gpt-6.2-sol",
+      "prompt_version": "v3",
+      "rules": 19,
+      "distinct_quoted_rules": 16,
+      "quotes_checked": 19,
+      "quotes_found_word_for_word": 19,
+      "answer_key_matched": 0,
+      "answer_key_wrong": 0,
+      "answer_key_total": 0,
+      "review_reviewed": 16,
+      "review_right": 15,
+      "review_wrong": 1,
+      "review_cannot_tell": 0,
+      "cost_usd": 0.102531
+    },
+    {
+      "run_id": 4,
+      "started_at": "2026-11-27T06:08:01.941644+00:00",
+      "model": "gpt-6.2-sol",
+      "prompt_version": "v4",
+      "rules": 17,
+      "distinct_quoted_rules": 14,
+      "quotes_checked": 17,
+      "quotes_found_word_for_word": 17,
+      "answer_key_matched": 0,
+      "answer_key_wrong": 0,
+      "answer_key_total": 0,
+      "review_reviewed": 14,
+      "review_right": 13,
+      "review_wrong": 1,
+      "review_cannot_tell": 0,
+      "cost_usd": 0.096845
+    }
+  ]
+}

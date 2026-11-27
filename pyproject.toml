@@ -31,6 +31,10 @@ dev = [
     "ruff>=0.6",
     "testcontainers>=4.15.0",
 ]
+pipeline = [
+    "dagster>=1.13.31",
+    "dagster-webserver>=1.13.31",
+]
 
 [tool.hatch.version]
 path = "telecompass/__init__.py"

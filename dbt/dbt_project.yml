@@ -1,0 +1,18 @@
+# dbt over TeleCompass's own Postgres tables (D22). It builds views and tables in the
+# `analytics` schema and tests the data; it never writes to the pipeline's own tables.
+name: telecompass
+version: "1.0.0"
+config-version: 2
+profile: telecompass
+
+model-paths: ["models"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  telecompass:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

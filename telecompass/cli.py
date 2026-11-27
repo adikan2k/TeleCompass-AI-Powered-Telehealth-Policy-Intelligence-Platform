@@ -14,6 +14,7 @@ from telecompass import (
     config,
     copy_db,
     db,
+    dbt_runner,
     diff,
     engine,
     extract,
@@ -182,6 +183,14 @@ def cmd_changes(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dbt(args: argparse.Namespace) -> int:
+    """Run dbt (build, test, run...) against the chosen database."""
+    url = _database_url()
+    with _open_database():
+        pass  # brings the schema up to date before dbt reads it
+    return dbt_runner.run(url, args.arguments or ["build"])
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     """Print the answer key and a short excerpt of every entry."""
     with _open_database() as conn:
@@ -216,15 +225,17 @@ def cmd_sources(args: argparse.Namespace) -> int:
         if run is None:
             return 1
         urls = sources.cited_urls(store.stored_entries_for(conn, run.id))
+        overrides = sources.load_overrides(conn=conn)
+        fetcher = fetch.Fetcher(conn, client)
         print(f"{len(urls)} cited links. One request at a time per site, so this takes a while.")
-        results = sources.fetch_sources(
-            conn,
-            fetch.Fetcher(conn, client),
-            urls,
-            sources.load_overrides(conn=conn),
-            args.retry,
-            args.reread,
-        )
+        if args.refresh:
+            changed = 0
+            for url in urls:
+                _, did = sources.refresh_source(conn, fetcher, url, overrides)
+                changed += did
+            print(f"  monthly check done: {changed} document(s) changed since the last fetch")
+            return 0
+        results = sources.fetch_sources(conn, fetcher, urls, overrides, args.retry, args.reread)
     for outcome, count in sorted(Counter(result.outcome for result in results).items()):
         print(f"  {outcome}: {count}")
     for result in results:
@@ -437,6 +448,9 @@ def build_parser() -> argparse.ArgumentParser:
     sources_cmd.add_argument(
         "--reread", action="store_true", help="Read stored documents again; no new request."
     )
+    sources_cmd.add_argument(
+        "--refresh", action="store_true", help="Monthly check: fetch again, keep what changed."
+    )
     sources_cmd.set_defaults(run=cmd_sources)
 
     extract_cmd = commands.add_parser("extract", help="Read the fetched law into rules.")
@@ -457,6 +471,10 @@ def build_parser() -> argparse.ArgumentParser:
     wb.add_argument("--since", default="2025")
     wb.add_argument("--until", default="2026")
     wb.set_defaults(run=cmd_wayback)
+
+    dbt_cmd = commands.add_parser("dbt", help="Run dbt against the chosen database.")
+    dbt_cmd.add_argument("arguments", nargs="*", help="dbt arguments. Default: build.")
+    dbt_cmd.set_defaults(run=cmd_dbt)
 
     changes_cmd = commands.add_parser("changes", help="Propose rule changes from a diff.")
     changes_cmd.add_argument("jurisdiction", type=str.lower)

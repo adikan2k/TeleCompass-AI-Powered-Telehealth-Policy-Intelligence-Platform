@@ -1,0 +1,15 @@
+# Connection settings come from environment variables, set by `python -m telecompass dbt`
+# from the chosen database address. Nothing secret is written in this file.
+telecompass:
+  target: default
+  outputs:
+    default:
+      type: postgres
+      host: "{{ env_var('TC_DB_HOST') }}"
+      port: "{{ env_var('TC_DB_PORT') | as_number }}"
+      user: "{{ env_var('TC_DB_USER') }}"
+      password: "{{ env_var('TC_DB_PASSWORD', '') }}"
+      dbname: "{{ env_var('TC_DB_NAME') }}"
+      schema: analytics
+      sslmode: "{{ env_var('TC_DB_SSLMODE', 'prefer') }}"
+      threads: 4

@@ -305,3 +305,48 @@ def test_reread_adds_a_row_only_when_the_text_comes_out_differently(
     assert better.id != first.id and better.text == "A better reading of the page."
     assert (better.sha256, better.fetched_at) == (first.sha256, first.fetched_at)
     assert seen.count(CODE_59_1) == 1  # the site was asked once, in the first fetch only
+
+
+def _source_changes(conn: Connection) -> list[tuple]:
+    rows = conn.execute(
+        "SELECT url, old_source_text_id, new_source_text_id FROM source_change"
+    ).fetchall()
+    return [(r["url"], r["old_source_text_id"], r["new_source_text_id"]) for r in rows]
+
+
+def test_monthly_check_stores_nothing_when_the_law_is_unchanged(conn: Connection) -> None:
+    seen: list[str] = []
+    fetcher = fetcher_for(conn, site({CODE_59_1: html(LAW_HTML)}, seen=seen))
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+
+    current, changed = sources.refresh_source(conn, fetcher, CODE_59_1, {})
+
+    assert (current, changed) == (first, False)
+    assert seen.count(CODE_59_1) == 2  # it really asked again
+    assert _source_changes(conn) == []
+
+
+def test_monthly_check_adds_a_row_and_records_the_change(conn: Connection) -> None:
+    pages = {CODE_59_1: html(LAW_HTML)}
+    fetcher = fetcher_for(conn, site(pages))
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+
+    pages[CODE_59_1] = html("<p>The programme no longer reimburses live video.</p>")
+    current, changed = sources.refresh_source(conn, fetcher, CODE_59_1, {})
+
+    assert changed and current.id != first.id
+    assert current.text == "The programme no longer reimburses live video."
+    assert store.latest_source_text(conn, CODE_59_1) == current
+    assert _source_changes(conn) == [(CODE_59_1, first.id, current.id)]
+
+
+def test_a_failed_monthly_check_keeps_the_copy_we_hold(conn: Connection) -> None:
+    pages = {CODE_59_1: html(LAW_HTML)}
+    fetcher = fetcher_for(conn, site(pages))
+    first = sources.fetch_source(conn, fetcher, CODE_59_1, {})
+
+    pages[CODE_59_1] = httpx.Response(503)
+    current, changed = sources.refresh_source(conn, fetcher, CODE_59_1, {})
+
+    assert (current, changed) == (first, False)
+    assert _source_changes(conn) == []

@@ -375,3 +375,49 @@ def fetch_sources(
 ) -> list[SourceText]:
     """Fetch every cited document once, in order."""
     return [fetch_source(conn, fetcher, url, overrides, retry, reread) for url in urls]
+
+
+def refresh_source(
+    conn: Connection, fetcher: Fetcher, url: str, overrides: dict[str, Override]
+) -> tuple[SourceText, bool]:
+    """Ask again for a document already held, for the monthly check (D20).
+
+    A new row is stored only when the document's bytes changed, and the change is recorded in
+    `source_change`. Returns the current attempt and whether it changed. A document never read
+    before is fetched as usual.
+    """
+    existing = store.latest_source_text(conn, url)
+    if existing is None or existing.outcome != FETCHED:
+        return fetch_source(conn, fetcher, url, overrides, retry=True), False
+    override = overrides.get(url)
+    fetch_url = override.official_url if override else url
+    try:
+        page = _fetch_following_doorway(fetcher, fetch_url)
+    except (RobotsForbid, FetchRefused, httpx.HTTPError):
+        return existing, False  # a failed re-check keeps the copy we hold; it is not a change
+    if page.sha256 == existing.sha256:
+        return existing, False
+    text = extract_text(page)
+    if not text:
+        return existing, False
+    fresh = store.save_source_text(
+        conn,
+        url=url,
+        fetch_url=fetch_url,
+        fetched_at=page.fetched_at,
+        outcome=FETCHED,
+        final_url=page.url,
+        http_status=page.status,
+        content_type=page.content_type,
+        sha256=page.sha256,
+        raw_body=page.content,
+        text=text,
+        note="Fetched again in the monthly check; the document had changed.",
+    )
+    conn.execute(
+        "INSERT INTO source_change (url, old_source_text_id, new_source_text_id, detected_at) "
+        "VALUES (%s, %s, %s, %s)",
+        (url, existing.id, fresh.id, page.fetched_at),
+    )
+    conn.commit()
+    return fresh, True

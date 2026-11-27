@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: stg_snapshots
+    columns:
+      - name: snapshot_id
+        tests: [unique, not_null]
+      - name: origin
+        tests:
+          - accepted_values:
+              arguments: {values: ["live", "wayback"]}
+      - name: captured_at
+        tests: [not_null]
+  - name: stg_entries
+    columns:
+      - name: entry_id
+        tests: [unique, not_null]
+      - name: snapshot_id
+        tests:
+          - relationships:
+              arguments: {to: ref('stg_snapshots'), field: snapshot_id}
+  - name: stg_rules
+    description: >
+      Every rule. `is_live` uses the live site's meaning (rule 13): approved by a person,
+      quote found word for word, not retired, and from the newest full run or a later change run.
+    columns:
+      - name: rule_id
+        tests: [unique, not_null]
+      - name: effect
+        tests:
+          - accepted_values:
+              arguments: {values: ["allow", "deny", "require", "silent"]}
+      - name: human_decision
+        tests:
+          - accepted_values:
+              arguments: {values: ["approved", "rejected"]}
+      - name: entry_id
+        tests:
+          - relationships:
+              arguments: {to: ref('stg_entries'), field: entry_id}
+  - name: rule_lineage
+    columns:
+      - name: rule_id
+        tests: [unique, not_null]
+      - name: snapshot_id
+        tests: [not_null]
+  - name: decision_lineage
+    columns:
+      - name: decision_id
+        tests: [not_null]
+  - name: entry_changes
+    columns:
+      - name: entry_change_id
+        tests: [unique, not_null]
+      - name: kind
+        tests:
+          - accepted_values:
+              arguments: {values: ["added", "removed", "changed"]}
+  - name: upcoming_dates
+    columns:
+      - name: event
+        tests:
+          - accepted_values:
+              arguments: {values: ["starts", "ends"]}
+      - name: on_date
+        tests: [not_null]

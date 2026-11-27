@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: pipeline
+    description: The tables the TeleCompass pipeline writes. Rows are only ever added.
+    schema: public
+    tables:
+      - name: snapshot
+      - name: parse_run
+      - name: entry
+      - name: source_text
+      - name: extraction_run
+      - name: rule
+      - name: rule_review
+      - name: rule_retirement
+      - name: auto_review
+      - name: decision
+      - name: diff_run
+      - name: entry_change
+      - name: change_proposal
+      - name: change_decision

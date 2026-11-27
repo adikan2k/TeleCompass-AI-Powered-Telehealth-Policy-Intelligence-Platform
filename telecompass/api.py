@@ -178,14 +178,19 @@ def create_app(
             return reply(conn, body)
 
     @app.post("/preflight")
-    def run(visit: PublicVisit, request: Request) -> JSONResponse:
+    def run(visit: PublicVisit, request: Request, store: bool = True) -> JSONResponse:
+        """Decide a visit. With `store=false` the answer is shown but not kept and has no link:
+        the site uses that for the worked example it shows when the page opens."""
         today = now().date()
         with open_database() as conn:
             if count_request(conn, "site", today) > SITE_DAILY_LIMIT:
                 return reply(conn, {"error": "The site has reached today's limit."}, 429)
             if count_request(conn, visitor_key(request, today), today) > VISITOR_DAILY_LIMIT:
                 return reply(conn, {"error": "You have reached today's limit."}, 429)
-            decision, _, public_id = preflight.run_preflight(conn, visit.to_visit(), now())
+            if store:
+                decision, _, public_id = preflight.run_preflight(conn, visit.to_visit(), now())
+            else:
+                decision, public_id = preflight.decide_visit(conn, visit.to_visit()), None
             body = {
                 "id": public_id,
                 "visit": decision.visit.model_dump(mode="json"),

@@ -133,3 +133,15 @@ def test_counters_hold_a_hash_and_never_an_address(client: TestClient, conn: Con
     keys = [row["key"] for row in conn.execute("SELECT key FROM rate_counter").fetchall()]
     assert sorted(key.split(":")[0] for key in keys) == ["site", "visitor"]
     assert all("203.0.113.9" not in key for key in keys)
+
+
+def test_an_unstored_preview_answers_but_keeps_nothing(
+    client: TestClient, conn: Connection
+) -> None:
+    preview = client.post("/preflight?store=false", json=VISIT).json()
+
+    assert preview["id"] is None
+    assert any(line["key"] == scope.MEDICAID_MODALITY for line in preview["lines"])
+    assert conn.execute("SELECT count(*) AS n FROM decision").fetchone()["n"] == 0
+    stored = client.post("/preflight", json=VISIT).json()
+    assert stored["lines"] == preview["lines"] and stored["id"] is not None

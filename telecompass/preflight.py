@@ -50,15 +50,20 @@ def rules_for(conn: Connection, jurisdiction: str) -> list[Rule]:
     ]
 
 
+def decide_visit(conn: Connection, visit: Visit) -> Decision:
+    """Decide a visit from the stored rules, without storing anything."""
+    jurisdiction = scope.STATE_JURISDICTIONS.get(visit.patient_state.upper())
+    state_rules = rules_for(conn, jurisdiction) if jurisdiction else []
+    return decide(visit, state_rules, rules_for(conn, scope.FEDERAL))
+
+
 def run_preflight(conn: Connection, visit: Visit, now: datetime) -> tuple[Decision, int, str]:
     """Decide a visit from the stored rules and store the decision.
 
     Returns the decision, its row id and its public id. The public id is random, so a share
     link cannot be guessed from another one.
     """
-    jurisdiction = scope.STATE_JURISDICTIONS.get(visit.patient_state.upper())
-    state_rules = rules_for(conn, jurisdiction) if jurisdiction else []
-    decision = decide(visit, state_rules, rules_for(conn, scope.FEDERAL))
+    decision = decide_visit(conn, visit)
     public_id = secrets.token_urlsafe(9)
     row = conn.execute(
         "INSERT INTO decision (visit, visit_date, answer, rule_ids, created_at, public_id) "

@@ -256,7 +256,8 @@ def test_medicare_lines_change_when_the_date_passes_the_end_of_a_flexibility() -
     assert [item.summary for item in place_later.conditions] == ["Rural site."]
 
     visit_now, visit_later = (line(d, "medicare_in_person_requirement") for d in (now, later))
-    assert visit_now.verdict == Verdict.SILENT
+    assert visit_now.verdict == Verdict.ALLOWED  # no duty yet; the future one is shown
+    assert [item.summary for item in visit_now.evidence] == ["In-person visit first."]
     assert "starts on 2028-01-01" in visit_now.reason
     assert visit_later.verdict == Verdict.CONDITIONS
 
@@ -299,3 +300,20 @@ def test_same_visit_and_rules_always_give_the_same_decision() -> None:
     assert [(item.key, item.verdict) for item in first.lines] == [
         (item.key, item.verdict) for item in second.lines
     ]
+
+
+def test_medicare_rule_for_another_profession_is_left_out() -> None:
+    no_therapists = rule(MEDICARE, "deny", "eligible_practitioner", profession="physical therapist")
+    decision = decide(visit(), [], [no_therapists])
+    assert line(decision, "medicare_eligible_practitioner").verdict == Verdict.SILENT
+    therapist = visit(profession="physical therapist")
+    assert line(
+        decide(therapist, [], [no_therapists]), "medicare_eligible_practitioner"
+    ).verdict == (Verdict.NOT_ALLOWED)
+
+
+def test_end_date_is_stated_only_when_every_basis_has_one() -> None:
+    permanent = rule(MEDICARE, "allow", "originating_site", service_category="behavioral_health")
+    result = line(decide(visit(), [], [HOME, permanent]), "medicare_originating_site")
+    assert result.verdict == Verdict.ALLOWED
+    assert "In force through" not in result.reason

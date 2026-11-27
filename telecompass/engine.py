@@ -365,13 +365,46 @@ def medicare_lines(visit: Visit, rules: list[Rule]) -> list[Line]:
         if r.rule_type == scope.MEDICARE_TELEHEALTH
         and r.modality in (visit.modality, "any")
         and r.service_category in (visit.service_category, "any")
+        and fits_profession(r, visit.profession)
     ]
     note = "" if visit.payer == "medicare" else " (for reference: the payer is not Medicare)"
     lines = []
     for aspect, title in MEDICARE_ASPECTS.items():
         group = [r for r in mine if r.aspect == aspect]
-        lines.append(dated_line(f"medicare_{aspect}", title + note, group, visit.visit_date))
+        decide_line = requirement_line if aspect == "in_person_requirement" else dated_line
+        lines.append(decide_line(f"medicare_{aspect}", title + note, group, visit.visit_date))
     return lines
+
+
+def requirement_line(key: str, title: str, rules: list[Rule], on: date) -> Line:
+    """A line about a duty that starts on a date: is it in force yet, and if not, when."""
+    live = [rule for rule in rules if in_force(rule, on)]
+    coming = [r for r in rules if r.effective_from is not None and r.effective_from > on]
+    requires = _of(live, "require")
+    if requires:
+        return Line(
+            key=key,
+            title=title,
+            verdict=Verdict.CONDITIONS,
+            reason=f"A requirement is in force on {on}.",
+            conditions=_shown(requires),
+            evidence=_shown(_of(live, "allow")),
+        )
+    if not rules:
+        return Line(
+            key=key, title=title, verdict=Verdict.SILENT, reason="We hold no rule on this point."
+        )
+    first = min((r.effective_from for r in _of(coming, "require")), default=None)
+    reason = f"No requirement we hold is in force on {on}." + (
+        f" One starts on {first}." if first else ""
+    )
+    return Line(
+        key=key,
+        title=title,
+        verdict=Verdict.ALLOWED,
+        reason=reason,
+        evidence=_shown([*_of(live, "allow"), *_of(coming, "require")]),
+    )
 
 
 def dated_line(key: str, title: str, rules: list[Rule], on: date) -> Line:
@@ -385,8 +418,10 @@ def dated_line(key: str, title: str, rules: list[Rule], on: date) -> Line:
         return Line(key=key, title=title, verdict=Verdict.NOT_ALLOWED, reason=reason,
                     evidence=_shown(denies), would_allow=_shown(_of(ended, "allow")))  # fmt: skip
     if allows or requires:
-        verdict = Verdict.CONDITIONS if requires else Verdict.ALLOWED
-        reason = ("Allowed" if allows else "A requirement applies") + f" on {on}." + _until(live)
+        conditional = bool(requires) or any(rule.conditions for rule in allows)
+        verdict = Verdict.CONDITIONS if conditional else Verdict.ALLOWED
+        reason = ("Allowed" if allows else "A requirement applies") + f" on {on}."
+        reason += _until(allows or requires)
         return Line(key=key, title=title, verdict=verdict, reason=reason,
                     evidence=_shown(allows), conditions=_shown(requires))  # fmt: skip
     if ended or coming:
@@ -408,8 +443,11 @@ def dated_line(key: str, title: str, rules: list[Rule], on: date) -> Line:
 
 
 def _until(rules: list[Rule]) -> str:
-    ends = [rule.effective_to for rule in rules if rule.effective_to is not None]
-    return f" In force through {min(ends)}." if ends else ""
+    """When the basis runs out. Nothing is said if any of the rules has no stated end."""
+    ends = [rule.effective_to for rule in rules]
+    if not ends or any(end is None for end in ends):
+        return ""
+    return f" In force through {max(ends)}."
 
 
 def decide(visit: Visit, state_rules: list[Rule], federal_rules: list[Rule]) -> Decision:

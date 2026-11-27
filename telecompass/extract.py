@@ -22,7 +22,8 @@ from telecompass.sources import FETCHED, FORBIDDEN, scoped_entries
 # Bump when the instructions change, so every run records which instructions it used.
 # v1: first run. v2: rules must carry their conditions, human care only, modality as stated.
 # v3: same instructions; adds the Medicare rule type and the service_category field.
-PROMPT_VERSION = "v3"
+# v4: a date given for a Medicare provision is carried to every rule read from it.
+PROMPT_VERSION = "v4"
 MAX_SOURCE_CHARS = 120_000  # per model call, shared between the entry's sources
 MIN_QUOTE_CHARS = 20
 
@@ -174,7 +175,10 @@ RULE_TYPE_GUIDANCE = {
         "Dates matter most here: when the SOURCE says a rule holds through a date, set "
         "effective_to to that date; when it says a rule starts on or after a date, set "
         "effective_from; write a separate rule for what applies after a flexibility ends if "
-        "the SOURCE states it. Aspects: 'originating_site' (where the patient may be, such as "
+        "the SOURCE states it. A date the SOURCE gives for a provision applies to every rule "
+        "you read from that provision: when a passage says a requirement is effective after a "
+        "date, each duty described in that passage starts then, so set effective_from on each. "
+        "Aspects: 'originating_site' (where the patient may be, such as "
         "at home, and any geographic limit), 'coverage' (whether a modality such as audio-only "
         "is paid; set modality), 'in_person_requirement' (an in-person visit required before "
         "or alongside telehealth), 'eligible_practitioner' (who may furnish telehealth), or "
